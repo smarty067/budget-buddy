@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/design_tokens.dart';
-import '../../../app/constants/app_constants.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/currency_provider.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/services/budget_service.dart';
 
@@ -151,6 +151,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     return Container(
       padding: EdgeInsets.only(
@@ -250,7 +251,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                 decoration: InputDecoration(
                   labelText: _isGoal ? 'Target Amount' : 'Budget Amount',
                   hintText: '0.00',
-                  prefixText: '${AppConstants.currencySymbol} ',
+                  prefixText: '$currencySymbol ',
                   prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
                 ),
                 validator: (value) {

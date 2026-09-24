@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/design_tokens.dart';
-import '../../app/constants/app_constants.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/currency_provider.dart';
 import '../../core/providers/data_providers.dart';
 import '../../core/providers/dashboard_tab_provider.dart';
 import 'widgets/add_transaction_sheet.dart';
@@ -52,6 +52,7 @@ class DashboardScreen extends ConsumerWidget {
     final totalsAsync = ref.watch(monthlyTotalsProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
     final budgetsAsync = ref.watch(budgetsProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     // Get display name
     final displayName = isGuest
@@ -149,7 +150,7 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
-                            '${AppConstants.currencySymbol}${balance.toStringAsFixed(2)}',
+                            '$currencySymbol${balance.toStringAsFixed(2)}',
                             style: theme.textTheme.displayMedium?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
@@ -163,7 +164,7 @@ class DashboardScreen extends ConsumerWidget {
                               _BalanceStat(
                                 icon: Icons.arrow_downward_rounded,
                                 label: 'Income',
-                                amount: '${AppConstants.currencySymbol}${income.toStringAsFixed(0)}',
+                                amount: '$currencySymbol${income.toStringAsFixed(0)}',
                                 iconColor: const Color(0xFF6FFBBE),
                               ),
                               Container(
@@ -174,7 +175,7 @@ class DashboardScreen extends ConsumerWidget {
                               _BalanceStat(
                                 icon: Icons.arrow_upward_rounded,
                                 label: 'Expense',
-                                amount: '${AppConstants.currencySymbol}${expense.toStringAsFixed(0)}',
+                                amount: '$currencySymbol${expense.toStringAsFixed(0)}',
                                 iconColor: const Color(0xFFFFB4AB),
                               ),
                             ],
@@ -276,6 +277,7 @@ class DashboardScreen extends ConsumerWidget {
                       spent: totalSpent,
                       budget: budgetAmount,
                       ratio: ratio,
+                      currencySymbol: currencySymbol,
                     );
                   },
                   loading: () => const SizedBox.shrink(),
@@ -403,7 +405,7 @@ class DashboardScreen extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                '${isExpense ? "-" : "+"}${AppConstants.currencySymbol}${amount.toStringAsFixed(0)}',
+                                '${isExpense ? "-" : "+"}$currencySymbol${amount.toStringAsFixed(0)}',
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   color: isExpense
                                       ? theme.colorScheme.error
@@ -550,6 +552,7 @@ class _BudgetProgressCard extends StatelessWidget {
   final double spent;
   final double budget;
   final double ratio;
+  final String currencySymbol;
 
   const _BudgetProgressCard({
     required this.theme,
@@ -557,6 +560,7 @@ class _BudgetProgressCard extends StatelessWidget {
     required this.spent,
     required this.budget,
     required this.ratio,
+    required this.currencySymbol,
   });
 
   @override
@@ -621,13 +625,13 @@ class _BudgetProgressCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${AppConstants.currencySymbol}${spent.toStringAsFixed(0)} spent',
+                '$currencySymbol${spent.toStringAsFixed(0)} spent',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withAlpha(153),
                 ),
               ),
               Text(
-                '${AppConstants.currencySymbol}${budget.toStringAsFixed(0)} budget',
+                '$currencySymbol${budget.toStringAsFixed(0)} budget',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withAlpha(153),
                 ),

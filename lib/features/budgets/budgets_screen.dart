@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/design_tokens.dart';
-import '../../app/constants/app_constants.dart';
+import '../../core/providers/currency_provider.dart';
 import '../../core/providers/data_providers.dart';
 import '../../shared/widgets/glass_card.dart';
 import 'widgets/add_budget_sheet.dart';
@@ -48,6 +48,7 @@ class BudgetsScreen extends ConsumerWidget {
     final goalsAsync = ref.watch(savingsGoalsProvider);
     final budgetsAsync = ref.watch(budgetsProvider);
     final totalsAsync = ref.watch(monthlyTotalsProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -186,13 +187,13 @@ class BudgetsScreen extends ConsumerWidget {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Saved: ${AppConstants.currencySymbol}${current.toStringAsFixed(0)}',
+                                      'Saved: $currencySymbol${current.toStringAsFixed(0)}',
                                       style: theme.textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     Text(
-                                      'Goal: ${AppConstants.currencySymbol}${target.toStringAsFixed(0)}',
+                                      'Goal: $currencySymbol${target.toStringAsFixed(0)}',
                                       style: theme.textTheme.bodyMedium?.copyWith(
                                         color: theme.colorScheme.onSurface.withAlpha(153),
                                       ),
@@ -291,6 +292,7 @@ class BudgetsScreen extends ConsumerWidget {
                           spent: spent,
                           budget: amount,
                           color: AppColors.accentTeal,
+                          currencySymbol: currencySymbol,
                         ).animate().fadeIn(
                               delay: Duration(milliseconds: 200 + e.key * 80),
                               duration: 350.ms,
@@ -321,6 +323,7 @@ class _BudgetTile extends StatelessWidget {
   final double spent;
   final double budget;
   final Color color;
+  final String currencySymbol;
 
   const _BudgetTile({
     required this.categoryName,
@@ -328,6 +331,7 @@ class _BudgetTile extends StatelessWidget {
     required this.spent,
     required this.budget,
     required this.color,
+    required this.currencySymbol,
   });
 
   @override
@@ -371,7 +375,7 @@ class _BudgetTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Budget: ${AppConstants.currencySymbol}${budget.toInt()}',
+                      'Budget: $currencySymbol${budget.toInt()}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withAlpha(128),
                       ),
@@ -380,7 +384,7 @@ class _BudgetTile extends StatelessWidget {
                 ),
               ),
               Text(
-                '${AppConstants.currencySymbol}${spent.toInt()}',
+                '$currencySymbol${spent.toInt()}',
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: isOver ? theme.colorScheme.error : theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w700,

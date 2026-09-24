@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/design_tokens.dart';
 import '../../../app/constants/app_constants.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/currency_provider.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/services/transaction_service.dart';
 
@@ -149,6 +150,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final categoriesAsync = ref.watch(categoriesProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     // Accent color: red for expense, green for income
     final accentColor = _type == 'expense' ? theme.colorScheme.error : AppColors.accentGreen;
@@ -242,7 +244,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      AppConstants.currencySymbol,
+                      currencySymbol,
                       style: theme.textTheme.displaySmall?.copyWith(
                         color: accentColor,
                         fontWeight: FontWeight.w700,

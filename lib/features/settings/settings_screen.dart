@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/design_tokens.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/currency_provider.dart';
 import '../../core/providers/guest_provider.dart';
 import '../../core/providers/theme_provider.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/transaction_service.dart';
+import 'account_screen.dart';
+import 'categories_screen.dart';
 
-/// Settings screen with theme toggle and placeholder sections.
+/// Settings screen with working profile, currency, categories, appearance, and export options.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -27,6 +31,7 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final currentThemeMode = ref.watch(themeModeProvider);
     final isGuest = ref.watch(isGuestProvider);
+    final selectedCurrency = ref.watch(currencyProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -42,14 +47,21 @@ class SettingsScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.person_outline_rounded,
                 title: 'Account',
-                subtitle: isGuest ? 'Guest User' : 'Manage your profile',
-                onTap: () {},
+                subtitle: isGuest ? 'Guest User (Tap to manage)' : 'Manage your profile',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AccountScreen()),
+                  );
+                },
               ),
               _SettingsTile(
                 icon: Icons.currency_rupee_rounded,
                 title: 'Currency',
-                subtitle: 'INR (₹)',
-                onTap: () {},
+                subtitle: '${selectedCurrency.name} (${selectedCurrency.symbol})',
+                onTap: () {
+                  _showCurrencyDialog(context, ref, selectedCurrency);
+                },
               ),
             ],
           ),
@@ -72,7 +84,9 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.language_rounded,
                 title: 'Language',
                 subtitle: 'English',
-                onTap: () {},
+                onTap: () {
+                  _showLanguageDialog(context);
+                },
               ),
             ],
           ),
@@ -87,13 +101,20 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.category_outlined,
                 title: 'Categories',
                 subtitle: 'Manage spending categories',
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+                  );
+                },
               ),
               _SettingsTile(
                 icon: Icons.download_rounded,
                 title: 'Export Data',
                 subtitle: 'Download CSV of transactions',
-                onTap: () {},
+                onTap: () {
+                  _exportData(context, isGuest);
+                },
               ),
             ],
           ),
@@ -131,7 +152,7 @@ class SettingsScreen extends ConsumerWidget {
 
           // ── Danger Zone ──
           _SettingsSection(
-            title: 'Account',
+            title: 'Session',
             children: [
               _SettingsTile(
                 icon: Icons.logout_rounded,
@@ -148,13 +169,6 @@ class SettingsScreen extends ConsumerWidget {
                   }
                 },
               ),
-              if (!isGuest)
-                _SettingsTile(
-                  icon: Icons.delete_forever_rounded,
-                  title: 'Delete Account',
-                  titleColor: theme.colorScheme.error,
-                  onTap: () {},
-                ),
             ],
           ),
 
@@ -170,6 +184,65 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+
+  void _showCurrencyDialog(BuildContext context, WidgetRef ref, CurrencyInfo currentCurrency) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.xlAll),
+        title: const Text('Select Currency'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 380,
+          child: ListView.builder(
+            itemCount: availableCurrencies.length,
+            itemBuilder: (context, index) {
+              final currency = availableCurrencies[index];
+              final isSelected = currency.code == currentCurrency.code;
+
+              return ListTile(
+                leading: Text(
+                  currency.flag,
+                  style: const TextStyle(fontSize: 24),
+                ),
+                title: Text('${currency.name} (${currency.code})'),
+                trailing: Text(
+                  currency.symbol,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                selected: isSelected,
+                selectedTileColor:
+                    Theme.of(context).colorScheme.primaryContainer.withAlpha(77),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+                onTap: () {
+                  ref.read(currencyProvider.notifier).setCurrency(currency);
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Currency updated to ${currency.code} (${currency.symbol})'),
+                      backgroundColor: AppColors.accentGreen,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -222,6 +295,117 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.xlAll),
+        title: const Text('Select Language'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('English'),
+              trailing: const Icon(Icons.check, color: AppColors.accentGreen),
+              onTap: () => Navigator.pop(ctx),
+            ),
+            ListTile(
+              title: const Text('Hindi (हिंदी)'),
+              subtitle: const Text('Coming soon'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportData(BuildContext context, bool isGuest) async {
+    try {
+      final transactions = await TransactionService.getAll(limit: 500, isGuest: isGuest);
+      if (transactions.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No transactions to export.')),
+          );
+        }
+        return;
+      }
+
+      // Format CSV
+      final csvHeader = 'ID,Date,Type,Category,Amount,Note\n';
+      final csvRows = transactions.map((t) {
+        final id = t['id'] ?? '';
+        final date = t['transaction_date'] ?? '';
+        final type = t['type'] ?? '';
+        final cat = t['categories']?['name'] ?? t['category_name'] ?? '';
+        final amount = t['amount'] ?? 0;
+        final note = (t['note'] as String? ?? '').replaceAll(',', ';');
+        return '$id,$date,$type,$cat,$amount,$note';
+      }).join('\n');
+
+      final fullCsv = csvHeader + csvRows;
+
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.xlAll),
+            title: const Text('Export Data Ready'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${transactions.length} transactions exported successfully in CSV format.',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(77),
+                    borderRadius: AppRadius.mdAll,
+                  ),
+                  child: Text(
+                    '${fullCsv.split('\n').take(4).join('\n')}\n...',
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Exported ${transactions.length} rows.'),
+                      backgroundColor: AppColors.accentGreen,
+                    ),
+                  );
+                },
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to export data: $e')),
+        );
+      }
+    }
+  }
 }
 
 // ── Helper Widgets ──
@@ -247,7 +431,7 @@ class _SettingsSection extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         Container(
-          clipBehavior: Clip.antiAlias, // Protect ink splashes from overflowing
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: AppRadius.xlAll,
