@@ -48,7 +48,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   _PeriodButton(
                     label: 'Yearly',
                     isActive: _selectedPeriod == 'Yearly',
-                    onTap: () => setState(() => _selectedPeriod == 'Yearly'),
+                    onTap: () => setState(() => _selectedPeriod = 'Yearly'),
                   ),
                 ],
               ).animate().fadeIn(duration: 300.ms),
@@ -340,7 +340,7 @@ class _CategoryProgressRow extends StatelessWidget {
                 width: 32,
                 child: Text(
                   '${(percent * 100).toInt()}%',
-                  textAlign: Alignment.centerRight.x == 1.0 ? TextAlign.right : TextAlign.left,
+                  textAlign: TextAlign.right,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withAlpha(153),
                   ),

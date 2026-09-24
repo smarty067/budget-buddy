@@ -1,4 +1,4 @@
-name: Android CI - Build Debug APK
+name: Android CI - Build APK
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,7 +17,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Android Debug APK
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -40,15 +41,21 @@ jobs:
         run: flutter pub get
 
       - name: Grant execute permissions to Gradle wrapper
-        run: chmod +x android/gradlew
+        run: |
+          if [ -f android/gradlew ]; then
+            chmod +x android/gradlew
+          fi
 
       - name: Build Debug APK
         run: flutter build apk --debug
 
-      - name: Upload Debug APK Artifact
+      - name: Build Release APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload APKs Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: budget-buddy-apks
+          path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
           retention-days: 14

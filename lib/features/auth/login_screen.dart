@@ -79,19 +79,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  String _parseAuthError(String error) {
-    if (error.contains('Invalid login credentials')) {
-      return 'Invalid email or password. Please try again.';
-    }
-    if (error.contains('Email not confirmed')) {
-      return 'Please verify your email address first.';
-    }
-    if (error.contains('Too many requests')) {
-      return 'Too many attempts. Please try again later.';
-    }
-    return 'Something went wrong. Please try again.';
-  }
-
   String _parseGuestAuthError(String error) {
     if (error.contains('Anonymous sign-ins are disabled')) {
       return 'Guest sign-in is not available right now.';

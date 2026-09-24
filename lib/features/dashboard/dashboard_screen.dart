@@ -187,7 +187,7 @@ class DashboardScreen extends ConsumerWidget {
                     height: 180,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant.withAlpha(77),
+                      color: theme.colorScheme.surfaceContainerHighest.withAlpha(77),
                       borderRadius: AppRadius.xxlAll,
                     ),
                     child: const Center(child: CircularProgressIndicator()),
@@ -279,7 +279,7 @@ class DashboardScreen extends ConsumerWidget {
                     );
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
 
                 const SizedBox(height: AppSpacing.xl),

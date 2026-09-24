@@ -198,7 +198,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant.withAlpha(128),
+                      color: theme.colorScheme.surfaceContainerHighest.withAlpha(128),
                       borderRadius: AppRadius.xlAll,
                     ),
                     padding: const EdgeInsets.all(4),
