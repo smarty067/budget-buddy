@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../app/theme/design_tokens.dart';
 import '../../core/providers/currency_provider.dart';
 import '../../core/providers/data_providers.dart';
@@ -68,6 +69,65 @@ class BudgetsScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Wealth & Loans Hub Banner ──
+                InkWell(
+                  onTap: () => context.push('/investments'),
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0F5A3D), Color(0xFF141A22)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.mint.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.account_balance_outlined, color: AppColors.mint, size: 24),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Wealth & Loan Manager',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Track loans, SIPs & calculate EMI',
+                                style: TextStyle(
+                                  color: AppColors.onSurfaceVariantDark,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.mint, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.xl),
+
                 // ── Savings Goals Section ──
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

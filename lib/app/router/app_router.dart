@@ -13,6 +13,8 @@ import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
 import '../../features/dashboard/dashboard_shell.dart';
+import '../../features/emi_calculator/emi_calculator_screen.dart';
+import '../../features/investments/investments_screen.dart';
 
 /// Converts a [Stream] into a [ChangeNotifier] so GoRouter can listen for
 /// refresh signals without recreating the entire router instance.
@@ -106,6 +108,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const DashboardShell(),
+      ),
+      GoRoute(
+        path: '/emi-calculator',
+        builder: (context, state) => const EmiCalculatorScreen(),
+      ),
+      GoRoute(
+        path: '/investments',
+        builder: (context, state) => const InvestmentsScreen(),
       ),
     ],
     redirect: (context, state) {

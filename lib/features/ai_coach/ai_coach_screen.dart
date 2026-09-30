@@ -65,11 +65,14 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
       final isGuest = ref.read(isGuestProvider);
       final recentTransactions = ref.read(transactionsProvider).valueOrNull ?? [];
 
+      final history = _messages.map((m) => {'role': m.role, 'content': m.content}).toList();
+
       final reply = await AiService.sendMessage(
         message: text,
         quickPromptType: quickPromptType,
         isGuest: isGuest,
         transactionContext: recentTransactions,
+        conversationHistory: history,
       );
 
       if (mounted) {

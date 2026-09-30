@@ -165,9 +165,18 @@ ThemeData buildDarkTheme() {
       ),
       behavior: SnackBarBehavior.floating,
     ),
-    dividerTheme: DividerThemeData(
+    dividerTheme: const DividerThemeData(
       color: AppColors.outlineVariantDark,
       thickness: 1,
+    ),
+    sliderTheme: SliderThemeData(
+      activeTrackColor: AppColors.mint,
+      inactiveTrackColor: AppColors.cardBorder,
+      thumbColor: AppColors.mint,
+      overlayColor: AppColors.mint.withAlpha(51),
+      trackHeight: 4,
+      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+      overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
     ),
   );
 }

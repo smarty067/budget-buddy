@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../app/theme/design_tokens.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/currency_provider.dart';
@@ -221,33 +222,40 @@ class DashboardScreen extends ConsumerWidget {
                     Expanded(
                       child: _QuickActionCard(
                         icon: Icons.remove_circle_outline_rounded,
-                        label: 'Add Expense',
+                        label: 'Expense',
                         color: theme.colorScheme.error,
                         bgColor: theme.colorScheme.errorContainer.withAlpha(77),
                         onTap: () => _showAddTransaction(context, 'expense'),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: _QuickActionCard(
                         icon: Icons.add_circle_outline_rounded,
-                        label: 'Add Income',
-                        color: AppColors.accentGreen,
-                        bgColor: AppColors.accentGreen.withAlpha(38),
+                        label: 'Income',
+                        color: AppColors.mint,
+                        bgColor: AppColors.mint.withAlpha(38),
                         onTap: () => _showAddTransaction(context, 'income'),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: _QuickActionCard(
-                        icon: Icons.bar_chart_rounded,
-                        label: 'Statistics',
+                        icon: Icons.calculate_outlined,
+                        label: 'Loan / EMI',
+                        color: AppColors.mint,
+                        bgColor: AppColors.cardDark,
+                        onTap: () => context.push('/emi-calculator'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.pie_chart_outline_rounded,
+                        label: 'Wealth Hub',
                         color: theme.colorScheme.tertiary,
                         bgColor: theme.colorScheme.tertiaryContainer.withAlpha(77),
-                        onTap: () {
-                          // Switch to Statistics tab (index 1)
-                          ref.read(dashboardTabProvider.notifier).state = 1;
-                        },
+                        onTap: () => context.push('/investments'),
                       ),
                     ),
                   ],

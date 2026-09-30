@@ -50,16 +50,16 @@ class AppColors {
   static const Color scrimLight = Color(0xFF000000);
   static const Color surfaceTintLight = Color(0xFF006C49);
 
-  // ── Dark Mode (fixed-dim equivalents) ──
-  static const Color primaryDark = Color(0xFF4EDEA3);
-  static const Color onPrimaryDark = Color(0xFF003825);
-  static const Color primaryContainerDark = Color(0xFF005137);
-  static const Color onPrimaryContainerDark = Color(0xFF6FFBBE);
+  // ── Dark Mode (Fine-tuned Emerald & Mint Reference Palette) ──
+  static const Color primaryDark = Color(0xFF2EE8A5);
+  static const Color onPrimaryDark = Color(0xFF053B2A);
+  static const Color primaryContainerDark = Color(0xFF0FC27B);
+  static const Color onPrimaryContainerDark = Color(0xFF053B2A);
 
-  static const Color secondaryDark = Color(0xFF6FFBBE);
-  static const Color onSecondaryDark = Color(0xFF003829);
-  static const Color secondaryContainerDark = Color(0xFF0D503D);
-  static const Color onSecondaryContainerDark = Color(0xFFB0F1D5);
+  static const Color secondaryDark = Color(0xFF0FC27B);
+  static const Color onSecondaryDark = Color(0xFF0B0F14);
+  static const Color secondaryContainerDark = Color(0xFF141A22);
+  static const Color onSecondaryContainerDark = Color(0xFF2EE8A5);
 
   static const Color tertiaryDark = Color(0xFFA3CDE0);
   static const Color onTertiaryDark = Color(0xFF043543);
@@ -71,33 +71,41 @@ class AppColors {
   static const Color errorContainerDark = Color(0xFF93000A);
   static const Color onErrorContainerDark = Color(0xFFFFDAD6);
 
-  static const Color surfaceDark = Color(0xFF161D19);
-  static const Color onSurfaceDark = Color(0xFFDDE4DE);
-  static const Color surfaceVariantDark = Color(0xFF3F4943);
-  static const Color onSurfaceVariantDark = Color(0xFFBEC9C1);
-  static const Color outlineDark = Color(0xFF89938C);
-  static const Color outlineVariantDark = Color(0xFF3F4943);
+  static const Color surfaceDark = Color(0xFF141A22);
+  static const Color onSurfaceDark = Color(0xFFF1F5F9);
+  static const Color surfaceVariantDark = Color(0xFF1E2630);
+  static const Color onSurfaceVariantDark = Color(0xFF94A3B8);
+  static const Color outlineDark = Color(0xFF2A3644);
+  static const Color outlineVariantDark = Color(0xFF1E2630);
 
-  static const Color backgroundDark = Color(0xFF161D19);
-  static const Color onBackgroundDark = Color(0xFFDDE4DE);
+  static const Color backgroundDark = Color(0xFF0B0F14);
+  static const Color onBackgroundDark = Color(0xFFF1F5F9);
 
-  static const Color inverseSurfaceDark = Color(0xFFDDE4DE);
-  static const Color onInverseSurfaceDark = Color(0xFF2B322D);
-  static const Color inversePrimaryDark = Color(0xFF006C49);
+  static const Color inverseSurfaceDark = Color(0xFFF1F5F9);
+  static const Color onInverseSurfaceDark = Color(0xFF0B0F14);
+  static const Color inversePrimaryDark = Color(0xFF0FC27B);
 
   static const Color shadowDark = Color(0xFF000000);
   static const Color scrimDark = Color(0xFF000000);
-  static const Color surfaceTintDark = Color(0xFF4EDEA3);
+  static const Color surfaceTintDark = Color(0xFF2EE8A5);
+
+  // ── Reference Palette Specific Tokens ──
+  static const Color emerald = Color(0xFF0FC27B);
+  static const Color mint = Color(0xFF2EE8A5);
+  static const Color cardDark = Color(0xFF141A22);
+  static const Color cardBorder = Color(0xFF1E2630);
+  static const Color heroDarkText = Color(0xFF053B2A);
+  static const Color heroDarkSecondaryText = Color(0xFF0A5C42);
 
   // ── Glassmorphism Surfaces ──
-  static const Color glassLight = Color(0x66FFFFFF); // rgba(255,255,255,0.4)
-  static const Color glassDark = Color(0x661E2320); // rgba(30,35,32,0.4)
+  static const Color glassLight = Color(0x66FFFFFF);
+  static const Color glassDark = Color(0x66141A22);
   static const Color glassBorderLight = Color(0x33FFFFFF);
-  static const Color glassBorderDark = Color(0x33FFFFFF);
+  static const Color glassBorderDark = Color(0x332EE8A5);
 
   // ── Accent / Gradient ──
-  static const Color accentGreen = Color(0xFF10B981);
-  static const Color accentTeal = Color(0xFF14B8A6);
+  static const Color accentGreen = Color(0xFF0FC27B);
+  static const Color accentTeal = Color(0xFF2EE8A5);
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -106,7 +114,12 @@ class AppColors {
   static const LinearGradient darkPrimaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF4EDEA3), Color(0xFF6FFBBE)],
+    colors: [Color(0xFF0FC27B), Color(0xFF2EE8A5)],
+  );
+  static const LinearGradient heroGreenGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0FC27B), Color(0xFF2EE8A5)],
   );
 }
 
