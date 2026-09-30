@@ -33,7 +33,7 @@ class InvestmentCardCarousel extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+        separatorBuilder: (context, _) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (context, index) {
           final item = items[index];
           return _InvestmentCard(item: item);
@@ -50,12 +50,15 @@ class _InvestmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
     return Container(
       width: 260,
       decoration: BoxDecoration(
-        color: AppColors.cardDark,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: AppColors.cardBorder, width: 1.2),
+        border: Border.all(color: colors.surfaceBorder, width: 1.2),
+        boxShadow: colors.cardShadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -65,15 +68,8 @@ class _InvestmentCard extends StatelessWidget {
           Container(
             height: 90,
             width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF0F5A3D),
-                  Color(0xFF141A22),
-                ],
-              ),
+            decoration: BoxDecoration(
+              gradient: colors.bannerGradient,
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -84,12 +80,12 @@ class _InvestmentCard extends StatelessWidget {
                   height: 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.mint.withOpacity(0.2),
+                    color: colors.chipBackground,
                   ),
                 ),
                 Icon(
                   item.icon,
-                  color: AppColors.mint,
+                  color: colors.accentMint,
                   size: 34,
                 ),
               ],
@@ -106,14 +102,14 @@ class _InvestmentCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.mint.withOpacity(0.12),
+                    color: colors.chipBackground,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                    border: Border.all(color: AppColors.mint.withOpacity(0.3)),
+                    border: Border.all(color: colors.chipBorder),
                   ),
                   child: Text(
                     item.badge,
-                    style: const TextStyle(
-                      color: AppColors.mint,
+                    style: TextStyle(
+                      color: colors.accentMint,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
@@ -126,8 +122,8 @@ class _InvestmentCard extends StatelessWidget {
                   item.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     height: 1.25,
@@ -140,7 +136,7 @@ class _InvestmentCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: AppColors.onSurfaceVariantDark,
+                    color: colors.textSecondary,
                     fontSize: 11,
                     height: 1.2,
                   ),
@@ -154,14 +150,14 @@ class _InvestmentCard extends StatelessWidget {
                     children: [
                       Text(
                         item.actionText,
-                        style: const TextStyle(
-                          color: AppColors.mint,
+                        style: TextStyle(
+                          color: colors.accentMint,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward_rounded, color: AppColors.mint, size: 13),
+                      Icon(Icons.arrow_forward_rounded, color: colors.accentMint, size: 13),
                     ],
                   ),
                 ),

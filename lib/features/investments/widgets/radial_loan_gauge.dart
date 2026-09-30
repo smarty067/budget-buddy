@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/design_tokens.dart';
 
-/// Radial tick mark loan / portfolio balance gauge matching reference image 1.
+/// Radial tick mark loan / portfolio balance gauge with dynamic light/dark theme support.
 class RadialLoanGauge extends StatelessWidget {
   final double balance;
   final String nextDueDate;
@@ -26,6 +26,7 @@ class RadialLoanGauge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final currencyFormatter = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '',
@@ -49,8 +50,8 @@ class RadialLoanGauge extends StatelessWidget {
                 size: const Size(300, 300),
                 painter: _RadialTicksPainter(
                   progressRatio: progressRatio,
-                  activeColor: AppColors.mint,
-                  inactiveColor: AppColors.cardBorder.withOpacity(0.8),
+                  activeColor: colors.ringTickActive,
+                  inactiveColor: colors.ringTickInactive,
                   totalTicks: 56,
                 ),
               ),
@@ -58,10 +59,10 @@ class RadialLoanGauge extends StatelessWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'LOAN BALANCE',
                     style: TextStyle(
-                      color: AppColors.onSurfaceVariantDark,
+                      color: colors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.0,
@@ -73,18 +74,18 @@ class RadialLoanGauge extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
-                      const Text(
+                      Text(
                         '₹',
                         style: TextStyle(
-                          color: AppColors.mint,
+                          color: colors.accentMint,
                           fontSize: 30,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       Text(
                         currencyFormatter.format(balance.round()),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.textPrimary,
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
@@ -96,7 +97,7 @@ class RadialLoanGauge extends StatelessWidget {
                   Text(
                     'Next Due : $nextDueDate',
                     style: TextStyle(
-                      color: AppColors.onSurfaceVariantDark.withOpacity(0.9),
+                      color: colors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -104,8 +105,8 @@ class RadialLoanGauge extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '$currentInstallment/$totalInstallments',
-                    style: const TextStyle(
-                      color: AppColors.mint,
+                    style: TextStyle(
+                      color: colors.gainGreen,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -130,17 +131,17 @@ class RadialLoanGauge extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onViewDetails,
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: AppColors.cardDark,
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: AppColors.cardBorder, width: 1.2),
+                      backgroundColor: colors.surface,
+                      foregroundColor: colors.textPrimary,
+                      side: BorderSide(color: colors.surfaceBorder, width: 1.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'VIEW DETAILS',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
@@ -150,25 +151,25 @@ class RadialLoanGauge extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              // Secondary Action (Calculate EMI / Save Calculation)
+              // Secondary Action (Calculate EMI)
               Expanded(
                 child: SizedBox(
                   height: 48,
                   child: ElevatedButton(
                     onPressed: onSecondaryAction,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.mint,
-                      foregroundColor: AppColors.heroDarkText,
+                      backgroundColor: colors.accentMint,
+                      foregroundColor: colors.textOnGradient,
                       elevation: 0,
-                      shadowColor: AppColors.mint.withOpacity(0.5),
+                      shadowColor: colors.accentMint.withAlpha(128),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
                     ),
                     child: Text(
                       secondaryActionLabel,
-                      style: const TextStyle(
-                        color: AppColors.heroDarkText,
+                      style: TextStyle(
+                        color: colors.textOnGradient,
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.8,
@@ -223,7 +224,7 @@ class _RadialTicksPainter extends CustomPainter {
 
     // Glowing shadow for active ticks
     final glowPaint = Paint()
-      ..color = activeColor.withOpacity(0.35)
+      ..color = activeColor.withAlpha(77)
       ..strokeWidth = 6.0
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4)

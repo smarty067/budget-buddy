@@ -233,8 +233,8 @@ class DashboardScreen extends ConsumerWidget {
                       child: _QuickActionCard(
                         icon: Icons.add_circle_outline_rounded,
                         label: 'Income',
-                        color: AppColors.mint,
-                        bgColor: AppColors.mint.withAlpha(38),
+                        color: context.colors.gainGreen,
+                        bgColor: context.colors.chipBackground,
                         onTap: () => _showAddTransaction(context, 'income'),
                       ),
                     ),
@@ -243,8 +243,8 @@ class DashboardScreen extends ConsumerWidget {
                       child: _QuickActionCard(
                         icon: Icons.calculate_outlined,
                         label: 'Loan / EMI',
-                        color: AppColors.mint,
-                        bgColor: AppColors.cardDark,
+                        color: context.colors.accentMint,
+                        bgColor: context.colors.chipBackground,
                         onTap: () => context.push('/emi-calculator'),
                       ),
                     ),

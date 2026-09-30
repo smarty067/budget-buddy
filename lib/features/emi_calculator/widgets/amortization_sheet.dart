@@ -10,6 +10,7 @@ class AmortizationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final currencyFormatter = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
@@ -19,11 +20,11 @@ class AmortizationSheet extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
-      decoration: const BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         border: Border(
-          top: BorderSide(color: AppColors.cardBorder, width: 1.5),
+          top: BorderSide(color: colors.surfaceBorder, width: 1.5),
         ),
       ),
       child: Column(
@@ -35,7 +36,7 @@ class AmortizationSheet extends StatelessWidget {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.cardBorder,
+                color: colors.surfaceBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -47,10 +48,10 @@ class AmortizationSheet extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Amortization Schedule',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -59,7 +60,7 @@ class AmortizationSheet extends StatelessWidget {
                   Text(
                     'Year-by-year principal & interest payoff',
                     style: TextStyle(
-                      color: AppColors.onSurfaceVariantDark,
+                      color: colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -67,7 +68,7 @@ class AmortizationSheet extends StatelessWidget {
               ),
               IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                icon: Icon(Icons.close_rounded, color: colors.textSecondary),
               ),
             ],
           ),
@@ -76,16 +77,41 @@ class AmortizationSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.backgroundDark,
+              color: colors.surfaceSubtle,
               borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: AppColors.cardBorder),
+              border: Border.all(color: colors.surfaceBorder),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Expanded(flex: 2, child: Text('YEAR', style: TextStyle(color: AppColors.mint, fontSize: 11, fontWeight: FontWeight.bold))),
-                Expanded(flex: 3, child: Text('PRINCIPAL', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold))),
-                Expanded(flex: 3, child: Text('INTEREST', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold))),
-                Expanded(flex: 3, child: Text('BALANCE', textAlign: TextAlign.right, style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold))),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'YEAR',
+                    style: TextStyle(color: colors.accentMint, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'PRINCIPAL',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'INTEREST',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'BALANCE',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ],
             ),
           ),
@@ -94,7 +120,7 @@ class AmortizationSheet extends StatelessWidget {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: schedule.length,
-              separatorBuilder: (_, __) => const Divider(color: AppColors.cardBorder, height: 1),
+              separatorBuilder: (context, _) => Divider(color: colors.surfaceBorder, height: 1),
               itemBuilder: (context, index) {
                 final row = schedule[index];
                 return Padding(
@@ -105,8 +131,8 @@ class AmortizationSheet extends StatelessWidget {
                         flex: 2,
                         child: Text(
                           'Yr ${row.year}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colors.textPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -116,8 +142,8 @@ class AmortizationSheet extends StatelessWidget {
                         flex: 3,
                         child: Text(
                           currencyFormatter.format(row.principalPaid),
-                          style: const TextStyle(
-                            color: AppColors.mint,
+                          style: TextStyle(
+                            color: colors.gainGreen,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -128,7 +154,7 @@ class AmortizationSheet extends StatelessWidget {
                         child: Text(
                           currencyFormatter.format(row.interestPaid),
                           style: TextStyle(
-                            color: AppColors.onSurfaceVariantDark,
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -138,8 +164,8 @@ class AmortizationSheet extends StatelessWidget {
                         child: Text(
                           currencyFormatter.format(row.remainingBalance),
                           textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colors.textPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),

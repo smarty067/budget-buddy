@@ -8,7 +8,7 @@ import '../../core/providers/emi_provider.dart';
 import '../../core/services/emi_service.dart';
 import 'widgets/amortization_sheet.dart';
 
-/// Pixel-perfect Loan / EMI Calculator matching the reference design.
+/// Pixel-perfect Loan / EMI Calculator dynamically supporting Light & Dark themes.
 class EmiCalculatorScreen extends ConsumerStatefulWidget {
   const EmiCalculatorScreen({super.key});
 
@@ -53,6 +53,7 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
     setState(() => _isSaving = true);
     final state = ref.read(currentEmiProvider);
     final isGuest = ref.read(isGuestProvider);
+    final colors = context.colors;
 
     final title = 'Loan ₹${_currencyFormat.format(state.loanAmount).replaceAll('₹', '')} @ ${state.interestRate}%';
     final calcToSave = EmiCalculation(
@@ -74,16 +75,19 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: AppColors.mint, size: 20),
+              Icon(Icons.check_circle_rounded, color: colors.gainGreen, size: 20),
               const SizedBox(width: AppSpacing.md),
-              const Text('Calculation saved successfully!'),
+              Text(
+                'Calculation saved successfully!',
+                style: TextStyle(color: colors.textPrimary),
+              ),
             ],
           ),
-          backgroundColor: AppColors.cardDark,
+          backgroundColor: colors.surface,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            side: const BorderSide(color: AppColors.cardBorder),
+            side: BorderSide(color: colors.surfaceBorder),
           ),
         ),
       );
@@ -94,9 +98,10 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
   Widget build(BuildContext context) {
     final emiState = ref.watch(currentEmiProvider);
     final calc = emiState.calculation;
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -115,10 +120,10 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                       }
                     },
                   ),
-                  const Text(
+                  Text(
                     'Loan Calculator',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
@@ -148,18 +153,11 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(AppSpacing.xl),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF0FC27B),
-                            Color(0xFF2EE8A5),
-                          ],
-                        ),
+                        gradient: colors.heroGradient,
                         borderRadius: BorderRadius.circular(AppRadius.xxl),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2EE8A5).withOpacity(0.25),
+                            color: colors.accentMint.withAlpha(64),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -171,7 +169,7 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                           Text(
                             'MONTHLY PAYABLE EMI',
                             style: TextStyle(
-                              color: AppColors.heroDarkText.withOpacity(0.85),
+                              color: colors.textOnGradient.withAlpha(210),
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.8,
@@ -180,8 +178,8 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                           const SizedBox(height: 6),
                           Text(
                             _currencyFormat.format(calc.monthlyEmi.round()),
-                            style: const TextStyle(
-                              color: AppColors.heroDarkText,
+                            style: TextStyle(
+                              color: colors.textOnGradient,
                               fontSize: 38,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.5,
@@ -191,7 +189,7 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                           RichText(
                             text: TextSpan(
                               style: TextStyle(
-                                color: AppColors.heroDarkText.withOpacity(0.9),
+                                color: colors.textOnGradient.withAlpha(230),
                                 fontSize: 13,
                                 fontFamily: 'Manrope',
                               ),
@@ -214,9 +212,10 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
                       decoration: BoxDecoration(
-                        color: AppColors.cardDark,
+                        color: colors.surface,
                         borderRadius: BorderRadius.circular(AppRadius.xl),
-                        border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                        border: Border.all(color: colors.surfaceBorder, width: 1.2),
+                        boxShadow: colors.cardShadow,
                       ),
                       child: Column(
                         children: [
@@ -226,15 +225,15 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                               Text(
                                 'Total Interest Payable',
                                 style: TextStyle(
-                                  color: AppColors.onSurfaceVariantDark,
+                                  color: colors.textSecondary,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               Text(
                                 _currencyFormat.format(calc.totalInterest.round()),
-                                style: const TextStyle(
-                                  color: AppColors.mint,
+                                style: TextStyle(
+                                  color: colors.gainGreen,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -243,7 +242,7 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                            child: Divider(color: AppColors.cardBorder.withOpacity(0.7), height: 1),
+                            child: Divider(color: colors.surfaceBorder, height: 1),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -251,15 +250,15 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                               Text(
                                 'Total Payment',
                                 style: TextStyle(
-                                  color: AppColors.onSurfaceVariantDark,
+                                  color: colors.textSecondary,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               Text(
                                 _currencyFormat.format(calc.totalPayment.round()),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -323,11 +322,11 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                     Center(
                       child: TextButton.icon(
                         onPressed: _showAmortization,
-                        icon: const Icon(Icons.table_chart_outlined, color: AppColors.mint, size: 18),
-                        label: const Text(
+                        icon: Icon(Icons.table_chart_outlined, color: colors.accentMint, size: 18),
+                        label: Text(
                           'View Amortization Schedule',
                           style: TextStyle(
-                            color: AppColors.mint,
+                            color: colors.accentMint,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -355,27 +354,27 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveCalculation,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.mint,
-                    foregroundColor: AppColors.heroDarkText,
+                    backgroundColor: colors.accentMint,
+                    foregroundColor: colors.textOnGradient,
                     elevation: 0,
-                    shadowColor: AppColors.mint.withOpacity(0.5),
+                    shadowColor: colors.accentMint.withAlpha(128),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.xxl),
                     ),
                   ),
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.heroDarkText),
+                            valueColor: AlwaysStoppedAnimation<Color>(colors.textOnGradient),
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'SAVE CALCULATION',
                           style: TextStyle(
-                            color: AppColors.heroDarkText,
+                            color: colors.textOnGradient,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.0,
@@ -399,16 +398,18 @@ class _CircularIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: AppColors.cardDark,
+        color: colors.surface,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.cardBorder, width: 1.2),
+        border: Border.all(color: colors.surfaceBorder, width: 1.2),
+        boxShadow: colors.cardShadow,
       ),
       child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 22),
+        icon: Icon(icon, color: colors.textPrimary, size: 22),
         onPressed: onTap,
         splashRadius: 22,
       ),
@@ -437,6 +438,7 @@ class _SliderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -445,8 +447,8 @@ class _SliderSection extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -454,14 +456,14 @@ class _SliderSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.cardDark,
+                color: colors.surfaceSubtle,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                border: Border.all(color: colors.surfaceBorder, width: 1.2),
               ),
               child: Text(
                 valueDisplay,
-                style: const TextStyle(
-                  color: AppColors.mint,
+                style: TextStyle(
+                  color: colors.accentMint,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -472,10 +474,10 @@ class _SliderSection extends StatelessWidget {
         const SizedBox(height: 6),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AppColors.mint,
-            inactiveTrackColor: AppColors.cardBorder,
-            thumbColor: Colors.white,
-            overlayColor: AppColors.mint.withOpacity(0.2),
+            activeTrackColor: colors.sliderActive,
+            inactiveTrackColor: colors.sliderInactive,
+            thumbColor: colors.sliderThumb,
+            overlayColor: colors.sliderActive.withAlpha(51),
             trackHeight: 3.5,
             thumbShape: const RoundSliderThumbShape(
               enabledThumbRadius: 9,
@@ -503,6 +505,7 @@ class _SavedCalculationsModal extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final calculationsAsync = ref.watch(emiCalculationsProvider);
+    final colors = context.colors;
     final currencyFormat = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
@@ -512,10 +515,10 @@ class _SavedCalculationsModal extends ConsumerWidget {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: const BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-        border: Border(top: BorderSide(color: AppColors.cardBorder, width: 1.5)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+        border: Border(top: BorderSide(color: colors.surfaceBorder, width: 1.5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -526,16 +529,16 @@ class _SavedCalculationsModal extends ConsumerWidget {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.cardBorder,
+                color: colors.surfaceBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          const Text(
+          Text(
             'Saved Calculations',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -551,7 +554,7 @@ class _SavedCalculationsModal extends ConsumerWidget {
             error: (e, _) => Center(
               child: Text(
                 'No saved calculations found',
-                style: TextStyle(color: AppColors.onSurfaceVariantDark),
+                style: TextStyle(color: colors.textSecondary),
               ),
             ),
             data: (list) {
@@ -561,11 +564,11 @@ class _SavedCalculationsModal extends ConsumerWidget {
                     padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
                       children: [
-                        const Icon(Icons.calculate_outlined, color: AppColors.mint, size: 40),
+                        Icon(Icons.calculate_outlined, color: colors.accentMint, size: 40),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'No saved calculations yet.',
-                          style: TextStyle(color: AppColors.onSurfaceVariantDark),
+                          style: TextStyle(color: colors.textSecondary),
                         ),
                       ],
                     ),
@@ -577,7 +580,7 @@ class _SavedCalculationsModal extends ConsumerWidget {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: list.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (context, _) => const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (context, index) {
                     final item = list[index];
                     return InkWell(
@@ -586,9 +589,9 @@ class _SavedCalculationsModal extends ConsumerWidget {
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: AppColors.backgroundDark,
+                          color: colors.surfaceSubtle,
                           borderRadius: BorderRadius.circular(AppRadius.lg),
-                          border: Border.all(color: AppColors.cardBorder),
+                          border: Border.all(color: colors.surfaceBorder),
                         ),
                         child: Row(
                           children: [
@@ -596,10 +599,10 @@ class _SavedCalculationsModal extends ConsumerWidget {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: AppColors.mint.withOpacity(0.15),
+                                color: colors.chipBackground,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.mint, size: 20),
+                              child: Icon(Icons.account_balance_wallet_outlined, color: colors.accentMint, size: 20),
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
@@ -608,8 +611,8 @@ class _SavedCalculationsModal extends ConsumerWidget {
                                 children: [
                                   Text(
                                     item.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: colors.textPrimary,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -618,14 +621,14 @@ class _SavedCalculationsModal extends ConsumerWidget {
                                   Text(
                                     'EMI: ${currencyFormat.format(item.monthlyEmi.round())}/mo • ${item.tenureYears} yrs',
                                     style: TextStyle(
-                                      color: AppColors.onSurfaceVariantDark,
+                                      color: colors.textSecondary,
                                       fontSize: 12,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 14),
+                            Icon(Icons.arrow_forward_ios_rounded, color: colors.textSecondary.withAlpha(128), size: 14),
                           ],
                         ),
                       ),

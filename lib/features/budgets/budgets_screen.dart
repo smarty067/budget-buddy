@@ -77,13 +77,10 @@ class BudgetsScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0F5A3D), Color(0xFF141A22)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      gradient: context.colors.bannerGradient,
                       borderRadius: BorderRadius.circular(AppRadius.xl),
-                      border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                      border: Border.all(color: context.colors.surfaceBorder, width: 1.2),
+                      boxShadow: context.colors.cardShadow,
                     ),
                     child: Row(
                       children: [
@@ -91,20 +88,20 @@ class BudgetsScreen extends ConsumerWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: AppColors.mint.withOpacity(0.15),
+                            color: context.colors.chipBackground,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.account_balance_outlined, color: AppColors.mint, size: 24),
+                          child: Icon(Icons.account_balance_outlined, color: context.colors.accentMint, size: 24),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Wealth & Loan Manager',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: context.colors.textPrimary,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -113,14 +110,14 @@ class BudgetsScreen extends ConsumerWidget {
                               Text(
                                 'Track loans, SIPs & calculate EMI',
                                 style: TextStyle(
-                                  color: AppColors.onSurfaceVariantDark,
+                                  color: context.colors.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.mint, size: 16),
+                        Icon(Icons.arrow_forward_ios_rounded, color: context.colors.accentMint, size: 16),
                       ],
                     ),
                   ),

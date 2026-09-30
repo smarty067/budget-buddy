@@ -165,9 +165,12 @@ ThemeData buildLightTheme() {
       ),
       behavior: SnackBarBehavior.floating,
     ),
-    dividerTheme: DividerThemeData(
+    dividerTheme: const DividerThemeData(
       color: AppColors.outlineVariantLight,
       thickness: 1,
     ),
+    extensions: const [
+      BudgetColors.light,
+    ],
   );
 }

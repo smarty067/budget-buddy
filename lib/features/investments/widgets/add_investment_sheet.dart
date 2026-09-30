@@ -74,6 +74,8 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
     return Container(
       padding: EdgeInsets.only(
         left: AppSpacing.lg,
@@ -81,10 +83,10 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
         top: AppSpacing.xl,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-        border: Border(top: BorderSide(color: AppColors.cardBorder, width: 1.5)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+        border: Border(top: BorderSide(color: colors.surfaceBorder, width: 1.5)),
       ),
       child: SingleChildScrollView(
         child: Form(
@@ -98,7 +100,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.cardBorder,
+                    color: colors.surfaceBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -106,18 +108,28 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 widget.existing == null ? 'Add Investment / Asset' : 'Edit Investment',
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSpacing.lg),
 
               // Investment Type Dropdown
               DropdownButtonFormField<InvestmentType>(
-                value: _selectedType,
-                dropdownColor: AppColors.cardDark,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Investment Category'),
+                initialValue: _selectedType,
+                dropdownColor: colors.surface,
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Investment Category',
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                ),
                 items: InvestmentType.values.map((t) {
-                  return DropdownMenuItem(value: t, child: Text(t.label));
+                  return DropdownMenuItem(
+                    value: t,
+                    child: Text(t.label, style: TextStyle(color: colors.textPrimary)),
+                  );
                 }).toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedType = val);
@@ -128,8 +140,11 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
               // Name Field
               TextFormField(
                 controller: _nameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Investment Name (e.g. Parag Parikh Flexi Cap)'),
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Investment Name (e.g. Parag Parikh Flexi Cap)',
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                ),
                 validator: (v) => (v == null || v.isEmpty) ? 'Please enter a name' : null,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -138,8 +153,12 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
               TextFormField(
                 controller: _investedController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Invested Amount (₹)', prefixText: '₹ '),
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Invested Amount (₹)',
+                  prefixText: '₹ ',
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                ),
                 validator: (v) => (v == null || double.tryParse(v) == null) ? 'Enter a valid amount' : null,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -148,8 +167,12 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
               TextFormField(
                 controller: _currentValController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Current Value (₹)', prefixText: '₹ '),
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Current Value (₹)',
+                  prefixText: '₹ ',
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
 
@@ -157,8 +180,12 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
               TextFormField(
                 controller: _sipController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Monthly SIP / Contribution (₹)', prefixText: '₹ '),
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Monthly SIP / Contribution (₹)',
+                  prefixText: '₹ ',
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
 
@@ -166,16 +193,26 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.mint,
-                  foregroundColor: AppColors.heroDarkText,
+                  backgroundColor: colors.accentMint,
+                  foregroundColor: colors.textOnGradient,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator(color: AppColors.heroDarkText)
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(colors.textOnGradient),
+                        ),
+                      )
                     : Text(
                         widget.existing == null ? 'ADD TO PORTFOLIO' : 'SAVE CHANGES',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: colors.textOnGradient,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
             ],

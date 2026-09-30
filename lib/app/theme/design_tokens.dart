@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+export 'budget_colors.dart';
 
 /// ============================================================
 /// Budget Buddy Design Tokens

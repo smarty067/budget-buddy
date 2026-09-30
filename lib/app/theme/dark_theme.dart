@@ -178,5 +178,8 @@ ThemeData buildDarkTheme() {
       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
       overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
     ),
+    extensions: const [
+      BudgetColors.dark,
+    ],
   );
 }

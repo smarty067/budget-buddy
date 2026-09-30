@@ -10,7 +10,7 @@ import 'widgets/investment_card_carousel.dart';
 import 'widgets/radial_loan_gauge.dart';
 import 'widgets/sip_calculator_sheet.dart';
 
-/// Wealth, Loans & Investment Hub matching Reference Image 1.
+/// Wealth, Loans & Investment Hub supporting dynamic Light and Dark themes.
 class InvestmentsScreen extends ConsumerStatefulWidget {
   const InvestmentsScreen({super.key});
 
@@ -50,31 +50,32 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
   }
 
   void _showLoanDetailsModal() {
+    final colors = context.colors;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        decoration: const BoxDecoration(
-          color: AppColors.cardDark,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-          border: Border(top: BorderSide(color: AppColors.cardBorder, width: 1.5)),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+          border: Border(top: BorderSide(color: colors.surfaceBorder, width: 1.5)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Active Loan Overview',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.md),
-            _buildDetailRow('Original Principal', '₹3,50,000'),
-            _buildDetailRow('Remaining Balance', '₹2,54,000'),
-            _buildDetailRow('Monthly EMI', '₹6,250'),
-            _buildDetailRow('Interest Rate', '9.2% p.a.'),
-            _buildDetailRow('Tenure Completed', '8 of 65 Months'),
-            _buildDetailRow('Next Auto-Debit', '01 Feb 2024'),
+            _buildDetailRow(colors, 'Original Principal', '₹3,50,000'),
+            _buildDetailRow(colors, 'Remaining Balance', '₹2,54,000'),
+            _buildDetailRow(colors, 'Monthly EMI', '₹6,250'),
+            _buildDetailRow(colors, 'Interest Rate', '9.2% p.a.'),
+            _buildDetailRow(colors, 'Tenure Completed', '8 of 65 Months'),
+            _buildDetailRow(colors, 'Next Auto-Debit', '01 Feb 2024'),
             const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
@@ -84,8 +85,8 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                   _openEmiCalculator();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.mint,
-                  foregroundColor: AppColors.heroDarkText,
+                  backgroundColor: colors.accentMint,
+                  foregroundColor: colors.textOnGradient,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
                 ),
                 child: const Text('RECALCULATE / PLAN EMI', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -97,14 +98,14 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(BudgetColors colors, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: AppColors.onSurfaceVariantDark, fontSize: 13)),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+          Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+          Text(value, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
         ],
       ),
     );
@@ -114,9 +115,10 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
   Widget build(BuildContext context) {
     final investmentSummary = ref.watch(investmentSummaryProvider);
     final investmentsAsync = ref.watch(investmentsProvider);
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -131,7 +133,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                   children: [
                     // Left: Menu Icon
                     IconButton(
-                      icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
+                      icon: Icon(Icons.menu_rounded, color: colors.textPrimary, size: 26),
                       onPressed: () {},
                     ),
                     // Center: Circular Brand Button
@@ -139,14 +141,15 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF16241E),
+                        color: colors.surfaceSubtle,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                        border: Border.all(color: colors.surfaceBorder, width: 1.2),
+                        boxShadow: colors.cardShadow,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.arrow_outward_rounded,
-                          color: AppColors.mint,
+                          color: colors.accentMint,
                           size: 22,
                         ),
                       ),
@@ -156,7 +159,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                       clipBehavior: Clip.none,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26),
+                          icon: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: 26),
                           onPressed: () {},
                         ),
                         Positioned(
@@ -165,13 +168,13 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.mint,
+                              color: colors.accentMint,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
+                            child: Text(
                               '26',
                               style: TextStyle(
-                                color: AppColors.heroDarkText,
+                                color: colors.textOnGradient,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -210,7 +213,10 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                     icon: Icons.health_and_safety_outlined,
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Health protection calculator coming soon!')),
+                        SnackBar(
+                          content: Text('Health protection calculator coming soon!', style: TextStyle(color: colors.textPrimary)),
+                          backgroundColor: colors.surface,
+                        ),
                       );
                     },
                   ),
@@ -241,20 +247,20 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Your Investment Portfolio',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     TextButton.icon(
                       onPressed: () => _openAddInvestment(),
-                      icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.mint, size: 18),
-                      label: const Text(
+                      icon: Icon(Icons.add_circle_outline_rounded, color: colors.accentMint, size: 18),
+                      label: Text(
                         'Add Asset',
-                        style: TextStyle(color: AppColors.mint, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: colors.accentMint, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
@@ -269,9 +275,10 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
-                    color: AppColors.cardDark,
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.xl),
-                    border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                    border: Border.all(color: colors.surfaceBorder, width: 1.2),
+                    boxShadow: colors.cardShadow,
                   ),
                   child: Column(
                     children: [
@@ -284,7 +291,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                               Text(
                                 'TOTAL PORTFOLIO VALUE',
                                 style: TextStyle(
-                                  color: AppColors.onSurfaceVariantDark,
+                                  color: colors.textSecondary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.5,
@@ -293,8 +300,8 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 _currencyFormat.format(investmentSummary.totalCurrentValue.round()),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -305,14 +312,14 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: investmentSummary.totalReturns >= 0
-                                  ? AppColors.mint.withOpacity(0.15)
-                                  : Colors.redAccent.withOpacity(0.15),
+                                  ? colors.gainGreen.withAlpha(38)
+                                  : colors.lossRed.withAlpha(38),
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Text(
                               '${investmentSummary.totalReturns >= 0 ? '+' : ''}${investmentSummary.overallReturnPercentage.toStringAsFixed(1)}%',
                               style: TextStyle(
-                                color: investmentSummary.totalReturns >= 0 ? AppColors.mint : Colors.redAccent,
+                                color: investmentSummary.totalReturns >= 0 ? colors.gainGreen : colors.lossRed,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                               ),
@@ -321,21 +328,24 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Divider(color: AppColors.cardBorder.withOpacity(0.7), height: 1),
+                      Divider(color: colors.surfaceBorder, height: 1),
                       const SizedBox(height: AppSpacing.md),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _buildPortfolioMiniStat(
+                            colors,
                             'Invested',
                             _currencyFormat.format(investmentSummary.totalInvested.round()),
                           ),
                           _buildPortfolioMiniStat(
+                            colors,
                             'Total Gains',
                             '+${_currencyFormat.format(investmentSummary.totalReturns.round())}',
                             highlight: true,
                           ),
                           _buildPortfolioMiniStat(
+                            colors,
                             'Monthly SIP',
                             _currencyFormat.format(investmentSummary.totalMonthlySip.round()),
                           ),
@@ -360,15 +370,16 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
                     itemCount: list.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                    separatorBuilder: (context, _) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       final item = list[index];
                       return Container(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: AppColors.cardDark,
+                          color: colors.surface,
                           borderRadius: BorderRadius.circular(AppRadius.lg),
-                          border: Border.all(color: AppColors.cardBorder),
+                          border: Border.all(color: colors.surfaceBorder),
+                          boxShadow: colors.cardShadow,
                         ),
                         child: Row(
                           children: [
@@ -376,10 +387,10 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                               width: 38,
                               height: 38,
                               decoration: BoxDecoration(
-                                color: AppColors.mint.withOpacity(0.15),
+                                color: colors.chipBackground,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.pie_chart_outline_rounded, color: AppColors.mint, size: 20),
+                              child: Icon(Icons.pie_chart_outline_rounded, color: colors.accentMint, size: 20),
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
@@ -388,12 +399,12 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                                 children: [
                                   Text(
                                     item.name,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                    style: TextStyle(color: colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${item.type.label} • Invested ${_currencyFormat.format(item.investedAmount.round())}',
-                                    style: TextStyle(color: AppColors.onSurfaceVariantDark, fontSize: 11),
+                                    style: TextStyle(color: colors.textSecondary, fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -403,12 +414,12 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                               children: [
                                 Text(
                                   _currencyFormat.format(item.currentValue.round()),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '+${item.returnPercentage.toStringAsFixed(1)}%',
-                                  style: const TextStyle(color: AppColors.mint, fontWeight: FontWeight.w700, fontSize: 11),
+                                  style: TextStyle(color: colors.gainGreen, fontWeight: FontWeight.w700, fontSize: 11),
                                 ),
                               ],
                             ),
@@ -428,16 +439,16 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     );
   }
 
-  Widget _buildPortfolioMiniStat(String label, String value, {bool highlight = false}) {
+  Widget _buildPortfolioMiniStat(BudgetColors colors, String label, String value, {bool highlight = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: AppColors.onSurfaceVariantDark, fontSize: 11)),
+        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
         const SizedBox(height: 2),
         Text(
           value,
           style: TextStyle(
-            color: highlight ? AppColors.mint : Colors.white,
+            color: highlight ? colors.gainGreen : colors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
