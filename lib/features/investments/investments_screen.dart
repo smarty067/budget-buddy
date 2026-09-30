@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../app/theme/design_tokens.dart';
+import '../../core/models/emi_calculation.dart';
 import '../../core/models/investment.dart';
+import '../../core/providers/emi_provider.dart';
 import '../../core/providers/investment_provider.dart';
 import '../emi_calculator/emi_calculator_screen.dart';
 import 'widgets/add_investment_sheet.dart';
@@ -10,7 +12,8 @@ import 'widgets/investment_card_carousel.dart';
 import 'widgets/radial_loan_gauge.dart';
 import 'widgets/sip_calculator_sheet.dart';
 
-/// Wealth, Loans & Investment Hub supporting dynamic Light and Dark themes.
+/// Wealth, Loans & Investment Hub supporting dynamic Light and Dark themes,
+/// starting cleanly from zero with interactive portfolio and loan planning.
 class InvestmentsScreen extends ConsumerStatefulWidget {
   const InvestmentsScreen({super.key});
 
@@ -49,7 +52,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     );
   }
 
-  void _showLoanDetailsModal() {
+  void _showLoanDetailsModal(EmiCalculation? latestLoan) {
     final colors = context.colors;
     showModalBottomSheet(
       context: context,
@@ -66,16 +69,23 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Active Loan Overview',
+              latestLoan != null ? 'Active Loan Overview' : 'No Active Loans',
               style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.md),
-            _buildDetailRow(colors, 'Original Principal', '₹3,50,000'),
-            _buildDetailRow(colors, 'Remaining Balance', '₹2,54,000'),
-            _buildDetailRow(colors, 'Monthly EMI', '₹6,250'),
-            _buildDetailRow(colors, 'Interest Rate', '9.2% p.a.'),
-            _buildDetailRow(colors, 'Tenure Completed', '8 of 65 Months'),
-            _buildDetailRow(colors, 'Next Auto-Debit', '01 Feb 2024'),
+            if (latestLoan != null) ...[
+              _buildDetailRow(colors, 'Loan Title', latestLoan.title),
+              _buildDetailRow(colors, 'Principal Amount', _currencyFormat.format(latestLoan.loanAmount.round())),
+              _buildDetailRow(colors, 'Monthly EMI', _currencyFormat.format(latestLoan.monthlyEmi.round())),
+              _buildDetailRow(colors, 'Interest Rate', '${latestLoan.interestRate}% p.a.'),
+              _buildDetailRow(colors, 'Total Tenure', '${latestLoan.tenureYears} Years (${latestLoan.tenureYears * 12} Months)'),
+              _buildDetailRow(colors, 'Total Interest', _currencyFormat.format(latestLoan.totalInterest.round())),
+            ] else ...[
+              Text(
+                'You currently have no active or saved loans recorded. Tap the button below to open the Loan EMI Calculator and plan your repayments.',
+                style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
@@ -89,7 +99,10 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                   foregroundColor: colors.textOnGradient,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
                 ),
-                child: const Text('RECALCULATE / PLAN EMI', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  latestLoan != null ? 'RECALCULATE / PLAN EMI' : 'PLAN LOAN WITH EMI CALCULATOR',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -115,7 +128,16 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
   Widget build(BuildContext context) {
     final investmentSummary = ref.watch(investmentSummaryProvider);
     final investmentsAsync = ref.watch(investmentsProvider);
+    final emiCalculationsAsync = ref.watch(emiCalculationsProvider);
     final colors = context.colors;
+
+    final savedCalculations = emiCalculationsAsync.valueOrNull ?? [];
+    final latestLoan = savedCalculations.isNotEmpty ? savedCalculations.first : null;
+
+    final double loanBalance = latestLoan != null ? latestLoan.loanAmount : 0.0;
+    final String nextDueDate = latestLoan != null ? 'Active Plan' : 'No Active Loan';
+    final int currentInstallment = latestLoan != null ? 1 : 0;
+    final int totalInstallments = latestLoan != null ? (latestLoan.tenureYears * 12) : 0;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -154,7 +176,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                         ),
                       ),
                     ),
-                    // Right: Notification Bell with Badge 26
+                    // Right: Notification Bell with Badge 0
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -172,7 +194,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              '26',
+                              '0',
                               style: TextStyle(
                                 color: colors.textOnGradient,
                                 fontSize: 10,
@@ -189,13 +211,13 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
 
               const SizedBox(height: AppSpacing.sm),
 
-              // ── HERO RADIAL LOAN GAUGE ──
+              // ── HERO RADIAL LOAN GAUGE (Starts from Zero or Saved Loan) ──
               RadialLoanGauge(
-                balance: 254000,
-                nextDueDate: '01 Feb 2024',
-                currentInstallment: 8,
-                totalInstallments: 65,
-                onViewDetails: _showLoanDetailsModal,
+                balance: loanBalance,
+                nextDueDate: nextDueDate,
+                currentInstallment: currentInstallment,
+                totalInstallments: totalInstallments,
+                onViewDetails: () => _showLoanDetailsModal(latestLoan),
                 onSecondaryAction: _openEmiCalculator,
                 secondaryActionLabel: 'CALCULATE EMI',
               ),
@@ -269,7 +291,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
 
               const SizedBox(height: AppSpacing.sm),
 
-              // Portfolio Summary Card
+              // Portfolio Summary Card (Starts from 0)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Container(
@@ -358,12 +380,77 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
 
               const SizedBox(height: AppSpacing.md),
 
-              // Investments List
+              // Investments List / Empty State
               investmentsAsync.when(
                 loading: () => const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.xl), child: CircularProgressIndicator())),
                 error: (e, _) => const SizedBox(),
                 data: (list) {
-                  if (list.isEmpty) return const SizedBox();
+                  if (list.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                          border: Border.all(color: colors.surfaceBorder, width: 1.2),
+                          boxShadow: colors.cardShadow,
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: colors.chipBackground,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.savings_outlined, color: colors.accentMint, size: 24),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'No Investments Added Yet',
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Track your mutual funds, SIPs, stocks, gold bonds, and fixed deposits starting from zero.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            OutlinedButton.icon(
+                              onPressed: () => _openAddInvestment(),
+                              icon: Icon(Icons.add_rounded, color: colors.accentMint, size: 18),
+                              label: Text(
+                                'Add Your First Investment',
+                                style: TextStyle(
+                                  color: colors.accentMint,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: colors.accentMint.withAlpha(128)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
                   return ListView.separated(
                     shrinkWrap: true,

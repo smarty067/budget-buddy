@@ -35,7 +35,7 @@ class RadialLoanGauge extends StatelessWidget {
 
     final progressRatio = totalInstallments > 0
         ? (currentInstallment / totalInstallments).clamp(0.0, 1.0)
-        : 0.2;
+        : 0.0;
 
     return Column(
       children: [

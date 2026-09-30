@@ -5,45 +5,8 @@ import '../supabase_client.dart';
 class InvestmentService {
   InvestmentService._();
 
-  // In-memory demo data for guests
-  static final List<Investment> _guestInvestments = [
-    Investment(
-      id: 'demo-1',
-      userId: 'guest',
-      name: 'Nifty 50 Index Fund',
-      type: InvestmentType.sip,
-      investedAmount: 60000,
-      currentValue: 74200,
-      expectedReturnRate: 14.0,
-      monthlyContribution: 5000,
-      startDate: DateTime.now().subtract(const Duration(days: 365)),
-      notes: 'Monthly SIP on 5th',
-    ),
-    Investment(
-      id: 'demo-2',
-      userId: 'guest',
-      name: 'Sovereign Gold Bond 2023',
-      type: InvestmentType.gold,
-      investedAmount: 25000,
-      currentValue: 31800,
-      expectedReturnRate: 10.0,
-      monthlyContribution: 0,
-      startDate: DateTime.now().subtract(const Duration(days: 400)),
-      notes: '2.5% semi-annual interest',
-    ),
-    Investment(
-      id: 'demo-3',
-      userId: 'guest',
-      name: 'HDFC Tax Saver FD',
-      type: InvestmentType.fd,
-      investedAmount: 50000,
-      currentValue: 53500,
-      expectedReturnRate: 7.1,
-      monthlyContribution: 0,
-      startDate: DateTime.now().subtract(const Duration(days: 180)),
-      notes: '3-year lock-in',
-    ),
-  ];
+  // In-memory demo data for guests (starts from zero)
+  static final List<Investment> _guestInvestments = [];
 
   static Future<List<Investment>> getInvestments({bool isGuest = false}) async {
     if (isGuest || SupabaseClientHelper.currentUser == null) {
