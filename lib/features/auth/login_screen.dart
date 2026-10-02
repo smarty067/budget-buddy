@@ -5,6 +5,7 @@ import '../../app/theme/design_tokens.dart';
 import '../../shared/widgets/glass_card.dart';
 import '../../shared/widgets/animated_button.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/session_service.dart';
 import '../../core/providers/guest_provider.dart';
 
 /// Login screen with glassmorphic card design.
@@ -51,6 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      await SessionService.recordLogin(isGuest: false);
       if (mounted) widget.onLoginSuccess();
     } catch (e) {
       setState(() {

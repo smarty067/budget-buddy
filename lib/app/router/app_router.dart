@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers/guest_provider.dart';
 import '../../core/providers/onboarding_provider.dart';
+import '../../core/services/session_service.dart';
 import '../../core/supabase_client.dart';
 import '../../features/onboarding/splash_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
@@ -70,8 +71,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SplashScreen(
           onComplete: () {
             // Check auth state synchronously (session is already loaded).
-            final isLoggedIn =
-                SupabaseClientHelper.currentUser != null || ref.read(guestModeProvider);
+            final isLoggedIn = SessionService.isLoggedIn ||
+                SupabaseClientHelper.currentUser != null ||
+                ref.read(guestModeProvider);
             if (!onboardingCompleted) {
               context.go('/onboarding');
             } else if (isLoggedIn) {
@@ -122,8 +124,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Use the synchronous currentUser getter — this works even before
       // the auth stream emits its first event (e.g. on cold start with a
       // persisted session).
-      final isLoggedIn =
-          SupabaseClientHelper.currentUser != null || ref.read(guestModeProvider);
+      final isLoggedIn = SessionService.isLoggedIn ||
+          SupabaseClientHelper.currentUser != null ||
+          ref.read(guestModeProvider);
       final isGoingToAuth = state.matchedLocation == '/login' ||
           state.matchedLocation == '/signup';
       final isGoingToSplash = state.matchedLocation == '/splash';

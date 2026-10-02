@@ -7,6 +7,8 @@ import '../../core/providers/currency_provider.dart';
 import '../../core/providers/guest_provider.dart';
 import '../../core/providers/theme_provider.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/notification_service.dart';
+import '../../core/services/session_service.dart';
 import '../../core/services/transaction_service.dart';
 import 'account_screen.dart';
 import 'categories_screen.dart';
@@ -123,37 +125,55 @@ class SettingsScreen extends ConsumerWidget {
 
           // ── Notifications Section ──
           _SettingsSection(
-            title: 'Notifications',
+            title: 'Notifications & Alerts',
             children: [
               _SettingsTile(
-                icon: Icons.notifications_outlined,
-                title: 'Budget Alerts',
-                subtitle: 'Get notified at 80% and 100%',
+                icon: Icons.notifications_active_outlined,
+                title: 'Push Notifications',
+                subtitle: 'Budget updates, EMI reminders & asset alerts',
                 trailing: Switch(
-                  value: true,
-                  onChanged: (_) {},
+                  value: NotificationService.areNotificationsEnabled,
+                  onChanged: (val) async {
+                    await NotificationService.setNotificationsEnabled(val);
+                    (context as Element).markNeedsBuild();
+                  },
                 ),
-                onTap: () {},
+                onTap: () async {
+                  await NotificationService.requestPermission();
+                  (context as Element).markNeedsBuild();
+                },
               ),
               _SettingsTile(
-                icon: Icons.auto_awesome_outlined,
-                title: 'AI Weekly Digest',
-                subtitle: 'Weekly spending summary',
-                trailing: Switch(
-                  value: true,
-                  onChanged: (_) {},
-                ),
-                onTap: () {},
+                icon: Icons.send_rounded,
+                title: 'Send Test Notification',
+                subtitle: 'Verify notifications on this device',
+                onTap: () async {
+                  await NotificationService.showNotification(
+                    title: '🚀 Budget Buddy Test Alert',
+                    body: 'Notifications are working perfectly on your device!',
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Test notification sent! Check your notification tray.')),
+                    );
+                  }
+                },
               ),
             ],
           ),
 
           const SizedBox(height: AppSpacing.xl),
 
-          // ── Danger Zone ──
+          // ── Session Section ──
           _SettingsSection(
-            title: 'Session',
+            title: 'Session & Security',
             children: [
+              _SettingsTile(
+                icon: Icons.shield_outlined,
+                title: 'Inactivity Policy',
+                subtitle: 'Keeps you signed in (auto logout after 30 days inactivity)',
+                onTap: () {},
+              ),
               _SettingsTile(
                 icon: Icons.logout_rounded,
                 title: 'Sign Out',
@@ -164,6 +184,7 @@ class SettingsScreen extends ConsumerWidget {
                   } else {
                     await AuthService.signOut();
                   }
+                  await SessionService.forceLogout();
                   if (context.mounted) {
                     context.go('/login');
                   }
