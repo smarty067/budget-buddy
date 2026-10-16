@@ -9,8 +9,10 @@ import '../../core/providers/investment_provider.dart';
 import '../emi_calculator/emi_calculator_screen.dart';
 import 'widgets/add_investment_sheet.dart';
 import 'widgets/investment_card_carousel.dart';
+import 'widgets/investment_detail_modal.dart';
 import 'widgets/radial_loan_gauge.dart';
 import 'widgets/sip_calculator_sheet.dart';
+import '../emi_calculator/widgets/loan_detail_screen.dart';
 
 /// Wealth, Loans & Investment Hub supporting dynamic Light and Dark themes,
 /// starting cleanly from zero with interactive portfolio and loan planning.
@@ -52,6 +54,15 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     );
   }
 
+  void _openInvestmentDetails(Investment item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => InvestmentDetailModal(investment: item),
+    );
+  }
+
   void _showLoanDetailsModal(EmiCalculation? latestLoan) {
     final colors = context.colors;
     showModalBottomSheet(
@@ -87,24 +98,57 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
               ),
             ],
             const SizedBox(height: AppSpacing.lg),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _openEmiCalculator();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accentMint,
-                  foregroundColor: colors.textOnGradient,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-                ),
-                child: Text(
-                  latestLoan != null ? 'RECALCULATE / PLAN EMI' : 'PLAN LOAN WITH EMI CALCULATOR',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+            if (latestLoan != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: latestLoan)),
+                    );
+                  },
+                  icon: const Icon(Icons.payments_outlined, size: 18),
+                  label: const Text('TRACK PAYMENTS & AMORTIZATION', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.accentMint,
+                    foregroundColor: colors.textOnGradient,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _openEmiCalculator();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: colors.surfaceBorder),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+                  ),
+                  child: Text('RECALCULATE IN EMI CALCULATOR', style: TextStyle(color: colors.textSecondary)),
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _openEmiCalculator();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.accentMint,
+                    foregroundColor: colors.textOnGradient,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+                  ),
+                  child: const Text('PLAN LOAN WITH EMI CALCULATOR', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -217,7 +261,15 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                 nextDueDate: nextDueDate,
                 currentInstallment: currentInstallment,
                 totalInstallments: totalInstallments,
-                onViewDetails: () => _showLoanDetailsModal(latestLoan),
+                onViewDetails: () {
+                  if (latestLoan != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: latestLoan)),
+                    );
+                  } else {
+                    _showLoanDetailsModal(null);
+                  }
+                },
                 onSecondaryAction: _openEmiCalculator,
                 secondaryActionLabel: 'CALCULATE EMI',
               ),
@@ -460,57 +512,68 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                     separatorBuilder: (context, _) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       final item = list[index];
-                      return Container(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          border: Border.all(color: colors.surfaceBorder),
-                          boxShadow: colors.cardShadow,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: colors.chipBackground,
-                                shape: BoxShape.circle,
+                      final isGain = item.currentValue >= item.investedAmount;
+                      return InkWell(
+                        onTap: () => _openInvestmentDetails(item),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            border: Border.all(color: colors.surfaceBorder),
+                            boxShadow: colors.cardShadow,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: colors.chipBackground,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.pie_chart_outline_rounded, color: colors.accentMint, size: 20),
                               ),
-                              child: Icon(Icons.pie_chart_outline_rounded, color: colors.accentMint, size: 20),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: TextStyle(color: colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${item.type.label} • Invested ${_currencyFormat.format(item.investedAmount.round())}',
+                                      style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    item.name,
-                                    style: TextStyle(color: colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                                    _currencyFormat.format(item.currentValue.round()),
+                                    style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${item.type.label} • Invested ${_currencyFormat.format(item.investedAmount.round())}',
-                                    style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                                    '${isGain ? '+' : ''}${item.returnPercentage.toStringAsFixed(1)}%',
+                                    style: TextStyle(
+                                      color: isGain ? colors.gainGreen : colors.lossRed,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  _currencyFormat.format(item.currentValue.round()),
-                                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '+${item.returnPercentage.toStringAsFixed(1)}%',
-                                  style: TextStyle(color: colors.gainGreen, fontWeight: FontWeight.w700, fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ],
+                              const SizedBox(width: AppSpacing.xs),
+                              Icon(Icons.chevron_right_rounded, color: colors.textSecondary.withAlpha(128), size: 18),
+                            ],
+                          ),
                         ),
                       );
                     },

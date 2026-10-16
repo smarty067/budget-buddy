@@ -8,6 +8,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/emi_provider.dart';
 import '../../core/services/emi_service.dart';
 import 'widgets/amortization_sheet.dart';
+import 'widgets/loan_detail_screen.dart';
 
 /// Pixel-perfect Loan / EMI Calculator dynamically supporting Light & Dark themes
 /// with direct numeric typing inputs, live synchronized sliders, and quick presets.
@@ -1013,6 +1014,16 @@ class _SavedCalculationsModal extends ConsumerWidget {
                                   ),
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.payments_outlined, color: colors.accentMint, size: 20),
+                              tooltip: 'Track Loan Payments & Amortization',
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: item)),
+                                );
+                              },
                             ),
                             Icon(Icons.arrow_forward_ios_rounded, color: colors.textSecondary.withAlpha(128), size: 14),
                           ],

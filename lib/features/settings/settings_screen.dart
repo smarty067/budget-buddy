@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../app/theme/design_tokens.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/currency_provider.dart';
@@ -10,12 +11,40 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/session_service.dart';
 import '../../core/services/transaction_service.dart';
+import '../legal/privacy_policy_screen.dart';
+import '../legal/terms_conditions_screen.dart';
 import 'account_screen.dart';
 import 'categories_screen.dart';
 
-/// Settings screen with working profile, currency, categories, appearance, and export options.
-class SettingsScreen extends ConsumerWidget {
+/// Settings / Profile screen with working profile, currency, categories,
+/// appearance, export, and Legal & About sections.
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _appVersion = '1.0.0';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = '${info.version}+${info.buildNumber}');
+      }
+    } catch (_) {
+      // package_info_plus not added — use fallback from pubspec
+      if (mounted) setState(() => _appVersion = '1.0.0+1');
+    }
+  }
 
   String _themeModeString(ThemeMode mode) {
     switch (mode) {
@@ -29,7 +58,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currentThemeMode = ref.watch(themeModeProvider);
     final isGuest = ref.watch(isGuestProvider);
@@ -135,12 +164,12 @@ class SettingsScreen extends ConsumerWidget {
                   value: NotificationService.areNotificationsEnabled,
                   onChanged: (val) async {
                     await NotificationService.setNotificationsEnabled(val);
-                    (context as Element).markNeedsBuild();
+                    if (mounted) setState(() {});
                   },
                 ),
                 onTap: () async {
                   await NotificationService.requestPermission();
-                  (context as Element).markNeedsBuild();
+                  if (mounted) setState(() {});
                 },
               ),
               _SettingsTile(
@@ -193,18 +222,183 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
 
+          const SizedBox(height: AppSpacing.xl),
+
+          // ── Legal & About Section ──
+          _SettingsSection(
+            title: 'Legal & About',
+            children: [
+              _SettingsTile(
+                icon: Icons.gavel_rounded,
+                title: 'Terms & Conditions',
+                subtitle: 'Read our terms of use',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TermsConditionsScreen()),
+                  );
+                },
+              ),
+              _SettingsTile(
+                icon: Icons.privacy_tip_outlined,
+                title: 'Privacy Policy',
+                subtitle: 'How we handle your data',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                  );
+                },
+              ),
+              _SettingsTile(
+                icon: Icons.info_outline_rounded,
+                title: 'About Budget Buddy',
+                subtitle: 'AI-powered personal finance for India',
+                onTap: () {
+                  _showAboutDialog(context);
+                },
+              ),
+              _SettingsTile(
+                icon: Icons.support_agent_rounded,
+                title: 'Contact & Support',
+                subtitle: '[PLACEHOLDER: support@yourapp.com]',
+                onTap: () {
+                  _showSupportDialog(context);
+                },
+              ),
+              _SettingsTile(
+                icon: Icons.new_releases_outlined,
+                title: 'App Version',
+                subtitle: 'v$_appVersion',
+                trailing: const SizedBox.shrink(),
+                onTap: () {},
+              ),
+            ],
+          ),
+
           const SizedBox(height: AppSpacing.xxl),
 
           // ── Version Info ──
           Center(
             child: Text(
-              'Budget Buddy v1.0.0',
+              'Budget Buddy v$_appVersion',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withAlpha(102),
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    final colors = context.colors;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.xlAll),
+        backgroundColor: colors.surface,
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: AppColors.darkPrimaryGradient,
+                borderRadius: AppRadius.lgAll,
+              ),
+              child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Text('Budget Buddy', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Version: v$_appVersion',
+              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'AI-powered personal budgeting and savings app designed for Indian users.',
+              style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Track expenses, manage budgets, plan loan repayments, and grow your investment portfolio — all in one place.',
+              style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Close', style: TextStyle(color: colors.accentMint)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSupportDialog(BuildContext context) {
+    final colors = context.colors;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.xlAll),
+        backgroundColor: colors.surface,
+        title: Text('Contact & Support', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'For support, feedback, or data requests, please contact:',
+              style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: colors.surfaceSubtle,
+                borderRadius: AppRadius.mdAll,
+                border: Border.all(color: colors.surfaceBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.email_outlined, color: colors.accentMint, size: 16),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          '[PLACEHOLDER: support@yourapp.com]',
+                          style: TextStyle(color: colors.accentMint, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'We aim to respond within 2–3 business days.',
+              style: TextStyle(color: colors.textSecondary, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Close', style: TextStyle(color: colors.accentMint)),
+          ),
         ],
       ),
     );

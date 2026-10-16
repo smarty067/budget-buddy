@@ -105,12 +105,18 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Icon(
-                        isGuest ? Icons.person_outline_rounded : Icons.person_rounded,
-                        color: theme.colorScheme.onPrimaryContainer,
+                    GestureDetector(
+                      onTap: () {
+                        // Navigate to Profile/Settings tab (index 4 in DashboardShell)
+                        ref.read(dashboardTabProvider.notifier).state = 4;
+                      },
+                      child: CircleAvatar(
+                        radius: 22,
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        child: Icon(
+                          isGuest ? Icons.person_outline_rounded : Icons.person_rounded,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
                       ),
                     ),
                   ],
