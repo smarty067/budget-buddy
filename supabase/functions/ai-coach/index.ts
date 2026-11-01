@@ -1,179 +1,528 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
+// ──────────────────────────────────────────────────────────────
+// Constants
+// ──────────────────────────────────────────────────────────────
+
+const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-title, http-referer",
+  "Access-Control-Allow-Headers":
+    "authorization, content-type, apikey, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-serve(async (req) => {
-  // CORS Preflight
+const JSON_HEADERS = { ...CORS_HEADERS, "Content-Type": "application/json" };
+
+/** Maximum characters allowed in the question field. */
+const MAX_QUESTION_LENGTH = 500;
+
+/** Max AI questions per user per calendar day (IST). */
+const DAILY_LIMIT = 30;
+
+/** Default OpenRouter model (overridden by AI_MODEL secret). */
+const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
+
+/** OpenRouter endpoint. */
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+/** System prompt embedded as a constant — never sent to logs. */
+const SYSTEM_PROMPT = `You are Budget Buddy's AI coach inside a personal budgeting app for Indian users. Currency is ₹. Be friendly, practical and short (under 120 words). Reply in the user's language (English, Hindi, Hinglish or Kannada).
+You receive a JSON summary of the user's data. It is all you can see. Totals are already calculated; use them and do not re-add raw rows.
+You can help with: spending totals and breakdowns by category, this month vs last month, remaining budget per category, savings-goal progress and monthly saving needed, whether a purchase is affordable based on income, this month's expenses and goals, and 1-2 concrete tips at the end.
+Rules: use only the data provided. If something is missing (a category with no data, EMIs, loans, bank balance), say so; never invent numbers. State the period you used and format amounts like ₹12,500. Give no stock, crypto or specific investment advice, only general concepts. You are not a licensed financial advisor. You can only read and advise; you cannot change data in the app.`;
+
+// ──────────────────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────────────────
+
+/** Returns a JSON Response with the given status. */
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: JSON_HEADERS,
+  });
+}
+
+/**
+ * Returns today's date string in Asia/Kolkata (IST) as "YYYY-MM-DD".
+ * Deno does not have a built-in Intl.DateTimeFormat with 'dateStyle',
+ * so we format manually.
+ */
+function todayIST(): string {
+  const now = new Date();
+  // Offset IST = UTC+5:30
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffsetMs);
+  const y = ist.getUTCFullYear();
+  const m = String(ist.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(ist.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Returns the first day of a given IST month offset.
+ * offset=0 → this month, offset=-1 → last month.
+ */
+function firstOfMonthIST(offset: 0 | -1): string {
+  const now = new Date();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffsetMs);
+  const year = ist.getUTCFullYear();
+  const month = ist.getUTCMonth() + 1 + offset; // may be 0 → Dec of prev year
+  const normalised = new Date(Date.UTC(year, month - 1, 1)); // JS Date handles roll-over
+  const y = normalised.getUTCFullYear();
+  const m = String(normalised.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}-01`;
+}
+
+/** Returns a string "YYYY-MM-DD" for the last day of the previous month (i.e. the day before firstOfMonthIST(0)). */
+function lastOfLastMonthIST(): string {
+  const first = new Date(firstOfMonthIST(0) + "T00:00:00Z");
+  first.setUTCDate(first.getUTCDate() - 1);
+  const y = first.getUTCFullYear();
+  const m = String(first.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(first.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Rounds a number to the nearest whole rupee. */
+function rupee(n: number): number {
+  return Math.round(n);
+}
+
+/** Number of whole months between two ISO date strings (start inclusive). */
+function monthsUntil(targetDateStr: string): number {
+  const now = new Date();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffsetMs);
+  const target = new Date(targetDateStr + "T00:00:00Z");
+  const diffMs = target.getTime() - ist.getTime();
+  const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.44);
+  return Math.max(1, Math.ceil(diffMonths));
+}
+
+// ──────────────────────────────────────────────────────────────
+// Main handler
+// ──────────────────────────────────────────────────────────────
+
+serve(async (req: Request): Promise<Response> => {
+  // ── CORS preflight ──
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: CORS_HEADERS });
+  }
+
+  // ── Only POST is allowed ──
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
   try {
-    // 1. Parse request body
-    const reqBody = await req.json().catch(() => ({}));
-    const {
-      message,
-      messages: conversationHistory,
-      quick_prompt_type,
-      model = "openai/gpt-4o-mini",
-      transaction_context: clientTxContext,
-    } = reqBody;
-
-    if (!message && (!conversationHistory || conversationHistory.length === 0)) {
-      return new Response(
-        JSON.stringify({ error: "Message or messages array is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // ── 1. Parse and validate request body ──
+    let body: { question?: unknown; debug?: unknown };
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "Invalid JSON body" }, 400);
     }
 
-    // 2. Extract auth & Supabase client (optional for guest users)
+    const question =
+      typeof body.question === "string" ? body.question.trim() : "";
+    if (!question) {
+      return jsonResponse({ error: "question is required" }, 400);
+    }
+    if (question.length > MAX_QUESTION_LENGTH) {
+      return jsonResponse(
+        {
+          error: `Question must be ${MAX_QUESTION_LENGTH} characters or fewer`,
+        },
+        400
+      );
+    }
+    const debugRequested = body.debug === true;
+
+    // ── 2. Authenticate caller — JWT is verified by Supabase (verify_jwt=true) ──
     const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    let user: any = null;
-    let supabaseClient: any = null;
 
-    if (supabaseUrl && supabaseAnonKey && authHeader) {
-      try {
-        supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-          global: { headers: { Authorization: authHeader } },
-        });
-        const { data: userData } = await supabaseClient.auth.getUser();
-        user = userData?.user ?? null;
-      } catch (e) {
-        console.warn("Auth check error (proceeding as guest):", e);
-      }
+    // Create a user-scoped client — RLS applies automatically.
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+    const userId = userData.user.id;
+
+    // ── 3. Read secrets ──
+    const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
+    if (!openRouterKey) {
+      return jsonResponse(
+        { error: "AI service is not configured. Contact support." },
+        503
+      );
+    }
+    const aiModel = Deno.env.get("AI_MODEL") ?? DEFAULT_MODEL;
+    const debugModeEnabled = Deno.env.get("DEBUG_MODE") === "true";
+
+    // ── 4. Rate limit: 30 questions per user per IST day ──
+    const today = todayIST();
+    const { data: usageRow, error: usageErr } = await supabase
+      .from("ai_usage")
+      .select("count")
+      .eq("user_id", userId)
+      .eq("day", today)
+      .maybeSingle();
+
+    if (usageErr) {
+      // Log only the error message — never user data
+      console.error("[ai-coach] ai_usage select error:", usageErr.message);
     }
 
-    // 3. Resolve OpenRouter / AI API Key
-    const openRouterApiKey = Deno.env.get("OPENROUTER_API_KEY") || Deno.env.get("GEMINI_API_KEY");
-    if (!openRouterApiKey) {
-      return new Response(
-        JSON.stringify({
-          error: "AI service configuration missing. Please set OPENROUTER_API_KEY in Supabase secrets.",
-          reply: "I am currently undergoing scheduled maintenance. Please check back shortly! 🌟"
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    const currentCount: number = (usageRow?.count as number | null) ?? 0;
+    if (currentCount >= DAILY_LIMIT) {
+      return jsonResponse(
+        {
+          error:
+            "You've reached your 30 questions for today. Come back tomorrow! 😊",
+        },
+        429
       );
     }
 
-    // 4. Build Financial Context
-    let transactionContextStr = "";
-    if (clientTxContext && typeof clientTxContext === "string") {
-      transactionContextStr = "\n\nUser Transaction Context:\n" + clientTxContext;
-    } else if (Array.isArray(clientTxContext) && clientTxContext.length > 0) {
-      transactionContextStr = "\n\nUser Recent Transactions:\n" +
-        clientTxContext.map((t: any) => {
-          const type = t.type ?? "expense";
-          const amt = t.amount ?? 0;
-          const cat = t.category_name ?? t.categories?.name ?? "Other";
-          const date = t.transaction_date ?? "";
-          const note = t.note ? ` (${t.note})` : "";
-          return `- ${type.toUpperCase()}: ₹${amt} for ${cat} on ${date}${note}`;
-        }).join("\n");
-    } else if (user && supabaseClient) {
-      try {
-        const { data: transactions } = await supabaseClient
-          .from("transactions")
-          .select("amount, type, category_id, transaction_date, note, categories(name)")
-          .order("transaction_date", { ascending: false })
-          .limit(15);
+    // ── 5. Fetch user data in parallel (RLS scopes each query automatically) ──
+    const thisMonthStart = firstOfMonthIST(0);
+    const lastMonthStart = firstOfMonthIST(-1);
+    const lastMonthEnd = lastOfLastMonthIST();
 
-        if (transactions && transactions.length > 0) {
-          transactionContextStr = "\n\nUser Recent Transactions:\n" +
-            transactions.map((t: any) => {
-              const catName = t.categories?.name ?? "Other";
-              return `- ${t.type.toUpperCase()}: ₹${t.amount} for ${catName} on ${t.transaction_date}${t.note ? ` (${t.note})` : ""}`;
-            }).join("\n");
-        }
-      } catch (e) {
-        console.warn("Failed to fetch user transactions for context:", e);
-      }
+    const [
+      profileResult,
+      txResult,
+      budgetResult,
+      goalsResult,
+      historyResult,
+    ] = await Promise.all([
+      // user profile
+      supabase
+        .from("user_profiles")
+        .select("monthly_income, currency, language")
+        .eq("id", userId)
+        .maybeSingle(),
+
+      // transactions for this + last calendar month with category names
+      supabase
+        .from("transactions")
+        .select("type, amount, transaction_date, note, categories(name)")
+        .eq("user_id", userId)
+        .gte("transaction_date", lastMonthStart)
+        .lte("transaction_date", lastOfLastMonthIST()) // will be augmented below
+        .order("transaction_date", { ascending: false }),
+
+      // budgets for this month
+      supabase
+        .from("budgets")
+        .select("amount, period_month, categories(name)")
+        .eq("user_id", userId)
+        .gte("period_month", thisMonthStart)
+        .lt(
+          "period_month",
+          // first of next month
+          (() => {
+            const d = new Date(thisMonthStart + "T00:00:00Z");
+            d.setUTCMonth(d.getUTCMonth() + 1);
+            return d.toISOString().slice(0, 10);
+          })()
+        ),
+
+      // savings goals
+      supabase
+        .from("savings_goals")
+        .select("title, target_amount, current_amount, target_date")
+        .eq("user_id", userId),
+
+      // last 6 chat messages oldest-first
+      supabase
+        .from("ai_chat_history")
+        .select("role, content")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(6),
+    ]);
+
+    // Also fetch this month's transactions in a second query since we need a
+    // different date range. We re-run for the current month only.
+    const txThisMonthResult = await supabase
+      .from("transactions")
+      .select("type, amount, transaction_date, note, categories(name)")
+      .eq("user_id", userId)
+      .gte("transaction_date", thisMonthStart)
+      .order("transaction_date", { ascending: false });
+
+    // Log only error messages — never row data
+    if (profileResult.error) {
+      console.error("[ai-coach] profile fetch:", profileResult.error.message);
+    }
+    if (txResult.error) {
+      console.error("[ai-coach] tx last-month fetch:", txResult.error.message);
+    }
+    if (txThisMonthResult.error) {
+      console.error(
+        "[ai-coach] tx this-month fetch:",
+        txThisMonthResult.error.message
+      );
+    }
+    if (budgetResult.error) {
+      console.error("[ai-coach] budget fetch:", budgetResult.error.message);
+    }
+    if (goalsResult.error) {
+      console.error("[ai-coach] goals fetch:", goalsResult.error.message);
+    }
+    if (historyResult.error) {
+      console.error("[ai-coach] history fetch:", historyResult.error.message);
     }
 
-    // 5. Build system prompt & messages array for OpenRouter
-    const systemPrompt = `You are Budget Buddy, an empathetic, smart, and ultra-practical AI Financial Coach for users in India (including Tier-2 and Tier-3 cities).
-Key guidelines:
-- Use Indian Rupee (₹) and Indian numbering system (Lakhs, Crores, Thousands) when relevant.
-- Give crisp, actionable, encouraging advice on budgeting, 50/30/20 rule, emergency funds, debt repayment, SIPs, and smart saving.
-- Keep responses concise, structured with bullet points or bold highlights. Avoid long walls of text.
-- If asked about loans or EMIs, explain how interest tenure impacts total cost.
-- If asked about investments, explain low-risk options (FD, PPF, Sovereign Gold Bonds, Index Funds/SIP) plainly.
-${transactionContextStr}`;
+    // ── 6. Build context entirely in code ──
 
-    const apiMessages: Array<{ role: string; content: string }> = [
-      { role: "system", content: systemPrompt }
-    ];
+    const profile = profileResult.data ?? null;
+    const txLastMonth: Array<Record<string, unknown>> =
+      (txResult.data as Array<Record<string, unknown>> | null) ?? [];
+    const txThisMonth: Array<Record<string, unknown>> =
+      (txThisMonthResult.data as Array<Record<string, unknown>> | null) ?? [];
+    const budgets: Array<Record<string, unknown>> =
+      (budgetResult.data as Array<Record<string, unknown>> | null) ?? [];
+    const goals: Array<Record<string, unknown>> =
+      (goalsResult.data as Array<Record<string, unknown>> | null) ?? [];
+    // History arrives newest-first; reverse to chronological order
+    const history: Array<{ role: string; content: string }> =
+      ((historyResult.data as Array<{ role: string; content: string }> | null) ??
+        []).reverse();
 
-    if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-      for (const m of conversationHistory) {
-        if (m.role && m.content) {
-          apiMessages.push({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content
-          });
+    /** Helper: aggregate income/expense/by-category from a transaction array. */
+    function aggregateTx(rows: Array<Record<string, unknown>>) {
+      let income = 0;
+      let expense = 0;
+      const byCat: Record<string, number> = {};
+      for (const r of rows) {
+        const amt = rupee(Number(r.amount ?? 0));
+        const catName =
+          ((r.categories as Record<string, unknown> | null)?.name as
+            | string
+            | undefined) ?? "Uncategorized";
+        if (r.type === "income") {
+          income += amt;
+        } else {
+          expense += amt;
+          byCat[catName] = (byCat[catName] ?? 0) + amt;
         }
       }
-    } else if (message) {
-      apiMessages.push({ role: "user", content: message });
+      return { income_total: rupee(income), expense_total: rupee(expense), expense_by_category: byCat };
     }
 
-    // 6. Call OpenRouter API
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const openRouterResponse = await fetch(openRouterUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openRouterApiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://budgetbuddy.app",
-        "X-Title": "Budget Buddy",
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: apiMessages,
-        max_tokens: 500,
-        temperature: 0.7,
-      }),
+    const thisMonthAgg = aggregateTx(txThisMonth);
+    const lastMonthAgg = aggregateTx(txLastMonth);
+
+    // Top 5 expense categories this month
+    const top5 = Object.entries(thisMonthAgg.expense_by_category)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([cat, amt]) => ({ category: cat, amount: amt }));
+
+    // Budgets with spent amounts
+    const budgetSummary = budgets.map((b) => {
+      const catName =
+        ((b.categories as Record<string, unknown> | null)?.name as
+          | string
+          | undefined) ?? "Overall";
+      const budgeted = rupee(Number(b.amount ?? 0));
+      const spent =
+        thisMonthAgg.expense_by_category[catName] ?? 0;
+      return {
+        category: catName,
+        budget: budgeted,
+        spent: rupee(spent),
+        remaining: rupee(budgeted - spent),
+      };
     });
 
-    if (!openRouterResponse.ok) {
-      const errText = await openRouterResponse.text();
-      console.error("OpenRouter API error response:", errText);
-      throw new Error(`OpenRouter API error (${openRouterResponse.status}): ${errText}`);
-    }
+    // Goals with monthly need
+    const goalSummary = goals.map((g) => {
+      const target = rupee(Number(g.target_amount ?? 0));
+      const saved = rupee(Number(g.current_amount ?? 0));
+      const remaining = rupee(target - saved);
+      const targetDate = (g.target_date as string | null) ?? null;
+      const neededPerMonth = targetDate
+        ? rupee(remaining / monthsUntil(targetDate))
+        : null;
+      return {
+        title: g.title,
+        target,
+        saved,
+        remaining,
+        target_date: targetDate,
+        needed_per_month: neededPerMonth,
+      };
+    });
 
-    const json = await openRouterResponse.json();
-    const reply = json.choices?.[0]?.message?.content ?? "I couldn't generate a response. Please try again.";
+    // Recent 15 transactions (this month first, then last month if needed)
+    const allTx = [...txThisMonth, ...txLastMonth];
+    const recent15 = allTx.slice(0, 15).map((r) => ({
+      date: r.transaction_date,
+      type: r.type,
+      amount: rupee(Number(r.amount ?? 0)),
+      category:
+        ((r.categories as Record<string, unknown> | null)?.name as
+          | string
+          | undefined) ?? "Uncategorized",
+      note: (r.note as string | null) ?? null,
+    }));
 
-    // 7. Save to ai_chat_history if user is logged in
-    if (user && supabaseClient && message) {
-      try {
-        await supabaseClient.from("ai_chat_history").insert([
-          { user_id: user.id, role: "user", content: message },
-          { user_id: user.id, role: "assistant", content: reply },
-        ]);
-      } catch (e: any) {
-        console.warn("Could not save to ai_chat_history:", e?.message || e);
+    const context = {
+      today: todayIST(),
+      profile: {
+        monthly_income: profile?.monthly_income != null
+          ? rupee(Number(profile.monthly_income))
+          : null,
+        currency: (profile?.currency as string | null) ?? "INR",
+        language: (profile?.language as string | null) ?? "en",
+      },
+      this_month: {
+        ...thisMonthAgg,
+        period: thisMonthStart.slice(0, 7),
+      },
+      last_month: {
+        ...lastMonthAgg,
+        period: lastMonthStart.slice(0, 7),
+      },
+      top_expense_categories_this_month: top5,
+      budgets_this_month: budgetSummary,
+      goals: goalSummary,
+      recent_transactions: recent15,
+    };
+
+    // ── 7. Call OpenRouter with 25 s timeout ──
+    const userMessageContent = JSON.stringify({
+      data: context,
+      question,
+    });
+
+    const openRouterMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      // Inject chat history (oldest first, already reversed above)
+      ...history.map((h) => ({ role: h.role, content: h.content })),
+      // Current user message with full context
+      { role: "user", content: userMessageContent },
+    ];
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25_000);
+
+    let answer: string;
+    try {
+      const orResponse = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openRouterKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://budgetbuddy.app",
+          "X-Title": "Budget Buddy",
+        },
+        body: JSON.stringify({
+          model: aiModel,
+          messages: openRouterMessages,
+          max_tokens: 500,
+          temperature: 0.3,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!orResponse.ok) {
+        const errMsg = await orResponse.text().catch(() => "unknown");
+        console.error(
+          `[ai-coach] OpenRouter HTTP ${orResponse.status}:`,
+          errMsg.slice(0, 200)
+        );
+        return jsonResponse(
+          { error: "AI is unavailable, please try again" },
+          502
+        );
       }
+
+      const orJson = await orResponse.json();
+      const content = orJson?.choices?.[0]?.message?.content;
+      if (typeof content !== "string" || !content.trim()) {
+        console.error("[ai-coach] OpenRouter returned empty content");
+        return jsonResponse(
+          { error: "AI is unavailable, please try again" },
+          502
+        );
+      }
+      answer = content.trim();
+    } catch (fetchErr: unknown) {
+      clearTimeout(timeoutId);
+      const msg =
+        fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      console.error("[ai-coach] OpenRouter fetch error:", msg);
+      return jsonResponse(
+        { error: "AI is unavailable, please try again" },
+        502
+      );
     }
 
-    return new Response(
-      JSON.stringify({ reply, model: json.model ?? model }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: any) {
-    console.error("Unhandled error in ai-coach function:", error);
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Internal server error",
-        reply: "I'm having a temporary hiccup connecting to the coaching servers. Please try again in a moment! 🌟"
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // ── 8. Increment rate-limit counter (only after a successful AI response) ──
+    try {
+      if (currentCount === 0 && !usageRow) {
+        // First question today — insert
+        await supabase
+          .from("ai_usage")
+          .insert({ user_id: userId, day: today, count: 1 });
+      } else {
+        // Subsequent question — upsert to handle race conditions
+        await supabase
+          .from("ai_usage")
+          .upsert(
+            { user_id: userId, day: today, count: currentCount + 1 },
+            { onConflict: "user_id,day" }
+          );
+      }
+    } catch (rateErr: unknown) {
+      const msg =
+        rateErr instanceof Error ? rateErr.message : String(rateErr);
+      console.error("[ai-coach] ai_usage update error:", msg);
+      // Non-fatal — do not fail the request
+    }
+
+    // ── 9. Save conversation turn to ai_chat_history (non-fatal if it fails) ──
+    try {
+      await supabase.from("ai_chat_history").insert([
+        { user_id: userId, role: "user", content: question },
+        { user_id: userId, role: "assistant", content: answer },
+      ]);
+    } catch (saveErr: unknown) {
+      const msg =
+        saveErr instanceof Error ? saveErr.message : String(saveErr);
+      console.error("[ai-coach] chat history save error:", msg);
+    }
+
+    // ── 10. Return answer (context only in full debug mode) ──
+    const responseBody: Record<string, unknown> = { answer };
+    if (debugRequested && debugModeEnabled) {
+      responseBody["context"] = context;
+    }
+
+    return jsonResponse(responseBody, 200);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[ai-coach] Unhandled error:", msg);
+    return jsonResponse({ error: "Internal server error" }, 500);
   }
 });
