@@ -426,6 +426,7 @@ serve(async (req: Request): Promise<Response> => {
     const timeoutId = setTimeout(() => controller.abort(), 25_000);
 
     let answer: string;
+    let respondedModel = aiModel;
     try {
       const orResponse = await fetch(OPENROUTER_URL, {
         method: "POST",
@@ -479,6 +480,7 @@ serve(async (req: Request): Promise<Response> => {
         return jsonResponse(errPayload, 502);
       }
       answer = content.trim();
+      respondedModel = orJson?.model ?? aiModel;
     } catch (fetchErr: unknown) {
       clearTimeout(timeoutId);
       const msg =
@@ -529,7 +531,10 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ── 10. Return answer (context only in full debug mode) ──
-    const responseBody: Record<string, unknown> = { answer };
+    const responseBody: Record<string, unknown> = {
+      answer,
+      model: respondedModel,
+    };
     if (debugRequested && debugModeEnabled) {
       responseBody["context"] = context;
     }
