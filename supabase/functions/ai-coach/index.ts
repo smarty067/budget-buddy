@@ -21,7 +21,7 @@ const MAX_QUESTION_LENGTH = 500;
 const DAILY_LIMIT = 30;
 
 /** Default OpenRouter model (overridden by AI_MODEL secret). */
-const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
+const DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct";
 
 /** OpenRouter endpoint. */
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -156,14 +156,15 @@ serve(async (req: Request): Promise<Response> => {
       auth: { persistSession: false },
     });
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData?.user) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
     const userId = userData.user.id;
 
     // ── 3. Read secrets ──
-    const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
+    const openRouterKey = (Deno.env.get("OPENROUTER_API_KEY") ?? "").trim();
     if (!openRouterKey) {
       return jsonResponse(
         { error: "AI service is not configured. Contact support." },
@@ -436,6 +437,11 @@ serve(async (req: Request): Promise<Response> => {
         },
         body: JSON.stringify({
           model: aiModel,
+          models: [
+            aiModel,
+            "meta-llama/llama-3.3-70b-instruct",
+          ],
+          route: "fallback",
           messages: openRouterMessages,
           max_tokens: 500,
           temperature: 0.3,
@@ -451,20 +457,26 @@ serve(async (req: Request): Promise<Response> => {
           `[ai-coach] OpenRouter HTTP ${orResponse.status}:`,
           errMsg.slice(0, 200)
         );
-        return jsonResponse(
-          { error: "AI is unavailable, please try again" },
-          502
-        );
+        const errPayload: Record<string, unknown> = {
+          error: "AI is unavailable, please try again",
+        };
+        if (debugRequested) {
+          errPayload["detail"] = `OpenRouter HTTP ${orResponse.status}: ${errMsg}`;
+        }
+        return jsonResponse(errPayload, 502);
       }
 
       const orJson = await orResponse.json();
       const content = orJson?.choices?.[0]?.message?.content;
       if (typeof content !== "string" || !content.trim()) {
         console.error("[ai-coach] OpenRouter returned empty content");
-        return jsonResponse(
-          { error: "AI is unavailable, please try again" },
-          502
-        );
+        const errPayload: Record<string, unknown> = {
+          error: "AI is unavailable, please try again",
+        };
+        if (debugRequested) {
+          errPayload["detail"] = "OpenRouter returned empty content";
+        }
+        return jsonResponse(errPayload, 502);
       }
       answer = content.trim();
     } catch (fetchErr: unknown) {
@@ -472,10 +484,13 @@ serve(async (req: Request): Promise<Response> => {
       const msg =
         fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
       console.error("[ai-coach] OpenRouter fetch error:", msg);
-      return jsonResponse(
-        { error: "AI is unavailable, please try again" },
-        502
-      );
+      const errPayload: Record<string, unknown> = {
+        error: "AI is unavailable, please try again",
+      };
+      if (debugRequested) {
+        errPayload["detail"] = msg;
+      }
+      return jsonResponse(errPayload, 502);
     }
 
     // ── 8. Increment rate-limit counter (only after a successful AI response) ──
