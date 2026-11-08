@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../app/theme/design_tokens.dart';
 import '../../core/models/emi_calculation.dart';
+import '../../core/models/loan.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/emi_provider.dart';
+import '../../core/providers/loan_provider.dart';
 import '../../core/services/emi_service.dart';
+import '../../core/services/loan_service.dart';
 import 'widgets/amortization_sheet.dart';
 import 'widgets/loan_detail_screen.dart';
 
@@ -218,6 +222,289 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
     }
   }
 
+  void _showSaveAsLoanSheet() {
+    final emiState = ref.read(currentEmiProvider);
+    final calc = emiState.calculation;
+    final colors = context.colors;
+    final nameController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetInnerContext, setModalState) => Container(
+          padding: EdgeInsets.only(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            top: AppSpacing.lg,
+            bottom: MediaQuery.of(sheetInnerContext).viewInsets.bottom + AppSpacing.xl,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+            border: Border.all(color: colors.surfaceBorder),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Save as Loan',
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Add this loan to your portfolio so AI Coach and budgeting can factor it in.',
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // Summary card of calculated figures
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: colors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: colors.surfaceBorder),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _sheetSummaryItem('Principal', _currencyFormat.format(emiState.loanAmount.round()), colors),
+                    _sheetSummaryItem('Monthly EMI', _currencyFormat.format(calc.monthlyEmi.round()), colors, highlight: true),
+                    _sheetSummaryItem('Interest', '${emiState.interestRate}%', colors),
+                    _sheetSummaryItem('Tenure', '${emiState.tenureYears * 12} mos', colors),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // Name input
+              Text(
+                'Loan Name',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Home Loan, Car Loan, Personal Loan',
+                  hintStyle: TextStyle(color: colors.textSecondary.withAlpha(150)),
+                  filled: true,
+                  fillColor: colors.background,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: colors.surfaceBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: colors.surfaceBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: colors.accentMint, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Start date selector
+              Text(
+                'Start Date',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: sheetInnerContext,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setModalState(() => selectedDate = picked);
+                  }
+                },
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: colors.background,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: colors.surfaceBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        DateFormat('dd MMM yyyy').format(selectedDate),
+                        style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600),
+                      ),
+                      Icon(Icons.calendar_today_rounded, size: 18, color: colors.accentMint),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // Save button
+              ElevatedButton(
+                onPressed: () async {
+                  final name = nameController.text.trim();
+                  void showError(String msg) {
+                    ScaffoldMessenger.of(sheetInnerContext).showSnackBar(
+                      SnackBar(
+                        content: Text(msg),
+                        backgroundColor: colors.lossRed,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+
+                  if (name.isEmpty) {
+                    showError('Please enter a loan name');
+                    return;
+                  }
+                  if (emiState.loanAmount <= 0) {
+                    showError('Principal amount must be greater than ₹0');
+                    return;
+                  }
+                  if (calc.monthlyEmi <= 0) {
+                    showError('Calculated monthly EMI must be greater than ₹0');
+                    return;
+                  }
+                  if (emiState.tenureYears <= 0) {
+                    showError('Loan tenure must be greater than zero');
+                    return;
+                  }
+                  if (emiState.interestRate < 0 || emiState.interestRate > 100) {
+                    showError('Interest rate must be between 0% and 100%');
+                    return;
+                  }
+
+                  Navigator.of(sheetContext).pop();
+                  setState(() => _isSaving = true);
+
+                  final isGuest = ref.read(isGuestProvider);
+                  final newLoan = Loan(
+                    id: '',
+                    userId: '',
+                    name: name,
+                    principal: emiState.loanAmount,
+                    interestRate: emiState.interestRate,
+                    emiAmount: calc.monthlyEmi,
+                    tenureMonths: emiState.tenureYears * 12,
+                    startDate: selectedDate,
+                    status: 'active',
+                  );
+
+                  await LoanService.saveLoan(newLoan, isGuest: isGuest);
+                  ref.invalidate(loansProvider);
+
+                  if (!mounted) return;
+                  setState(() => _isSaving = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Loan "$name" saved successfully!',
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      action: SnackBarAction(
+                        label: 'VIEW LOANS',
+                        textColor: colors.accentMint,
+                        onPressed: () {
+                          if (mounted) {
+                            context.push('/loans');
+                          }
+                        },
+                      ),
+                      backgroundColor: colors.surface,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        side: BorderSide(color: colors.surfaceBorder),
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.accentMint,
+                  foregroundColor: colors.textOnGradient,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                  ),
+                ),
+                child: const Text(
+                  'CONFIRM & SAVE LOAN',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetSummaryItem(String label, String value, BudgetColors colors, {bool highlight = false}) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: colors.textSecondary, fontSize: 11),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            color: highlight ? colors.accentMint : colors.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final emiState = ref.watch(currentEmiProvider);
@@ -256,10 +543,20 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                         letterSpacing: 0.2,
                       ),
                     ),
-                    // History / Info button
-                    _CircularIconButton(
-                      icon: Icons.history_rounded,
-                      onTap: _showSavedHistoryModal,
+                    // Top actions: My Loans + History
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _CircularIconButton(
+                          icon: Icons.account_balance_wallet_outlined,
+                          onTap: () => context.push('/loans'),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        _CircularIconButton(
+                          icon: Icons.history_rounded,
+                          onTap: _showSavedHistoryModal,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -510,7 +807,7 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                 ),
               ),
 
-              // ── BOTTOM PROCEED / SAVE BUTTON ──
+              // ── BOTTOM PROCEED / SAVE BUTTONS ──
               Padding(
                 padding: EdgeInsets.only(
                   left: AppSpacing.lg,
@@ -518,39 +815,72 @@ class _EmiCalculatorScreenState extends ConsumerState<EmiCalculatorScreen> {
                   bottom: MediaQuery.of(context).padding.bottom + AppSpacing.md,
                   top: AppSpacing.sm,
                 ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _saveCalculation,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.accentMint,
-                      foregroundColor: colors.textOnGradient,
-                      elevation: 0,
-                      shadowColor: colors.accentMint.withAlpha(128),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.xxl),
-                      ),
-                    ),
-                    child: _isSaving
-                        ? SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(colors.textOnGradient),
-                            ),
-                          )
-                        : Text(
-                            'SAVE CALCULATION',
+                child: Row(
+                  children: [
+                    // Primary Action: Save as Loan
+                    Expanded(
+                      flex: 3,
+                      child: SizedBox(
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSaving ? null : _showSaveAsLoanSheet,
+                          icon: const Icon(Icons.bookmark_add_rounded, size: 20),
+                          label: const Text(
+                            'SAVE AS LOAN',
                             style: TextStyle(
-                              color: colors.textOnGradient,
-                              fontSize: 15,
+                              fontSize: 13,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 1.0,
+                              letterSpacing: 0.8,
                             ),
                           ),
-                  ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.accentMint,
+                            foregroundColor: colors.textOnGradient,
+                            elevation: 0,
+                            shadowColor: colors.accentMint.withAlpha(128),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.xxl),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    // Secondary Action: Save Calculation
+                    Expanded(
+                      flex: 2,
+                      child: SizedBox(
+                        height: 52,
+                        child: OutlinedButton(
+                          onPressed: _isSaving ? null : _saveCalculation,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.textPrimary,
+                            side: BorderSide(color: colors.surfaceBorder, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.xxl),
+                            ),
+                          ),
+                          child: _isSaving
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(colors.accentMint),
+                                  ),
+                                )
+                              : Text(
+                                  'Quick Save',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

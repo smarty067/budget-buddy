@@ -41,3 +41,8 @@ enable_confirmations = false
 [functions.ai-coach]
 verify_jwt = true
 
+# The kb-ingest function uses x-ingest-secret header authentication instead of user JWTs.
+[functions.kb-ingest]
+verify_jwt = false
+
+

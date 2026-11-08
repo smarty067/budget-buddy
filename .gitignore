@@ -49,3 +49,5 @@ app.*.map.json
 .env.local
 .env.*.local
 *.env
+
+supabase/.temp/

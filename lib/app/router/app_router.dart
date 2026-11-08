@@ -15,6 +15,7 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
 import '../../features/dashboard/dashboard_shell.dart';
 import '../../features/emi_calculator/emi_calculator_screen.dart';
+import '../../features/emi_calculator/loans_screen.dart';
 import '../../features/investments/investments_screen.dart';
 
 /// Converts a [Stream] into a [ChangeNotifier] so GoRouter can listen for
@@ -114,6 +115,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/emi-calculator',
         builder: (context, state) => const EmiCalculatorScreen(),
+      ),
+      GoRoute(
+        path: '/loans',
+        builder: (context, state) => const LoansScreen(),
       ),
       GoRoute(
         path: '/investments',
